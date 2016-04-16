@@ -47,7 +47,6 @@
     <Compile Include="Input\NesController.cs" />
     <Compile Include="NesEmulator.cs" />
     <Compile Include="PPU\DefaultPalette.cs" />
-    <Compile Include="PPU\PaletteMemory.cs" />
     <Compile Include="PPU\Ricoh2C02.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="CPU\Ricoh2A03.cs" />

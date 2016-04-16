@@ -16,15 +16,15 @@ namespace Emulator.UI.ViewModel
 {
     internal class MainWindowViewModel : IPaletteFramebuffer
     {
-        private byte[] pixelData;
-        private Color[] palette;
+        private int[] pixelData;
+        private int[] palette;
 
         internal MainWindowViewModel()
         {
             this.Framebuffer = new WriteableBitmap(256, 240, 72, 72, PixelFormats.Bgr32, null);
-            this.pixelData = new byte[256 * 240 * 4];
+            this.pixelData = new int[256 * 240];
 
-            this.palette = new Color[] {
+           this.palette = new Color[] {
                 Color.FromRgb(0x75, 0x75, 0x75),
                 Color.FromRgb(0x27, 0x1B, 0x8F),
                 Color.FromRgb(0x00, 0x00, 0xAB),
@@ -89,18 +89,14 @@ namespace Emulator.UI.ViewModel
                 Color.FromRgb(0x00, 0x00, 0x00),
                 Color.FromRgb(0x00, 0x00, 0x00),
                 Color.FromRgb(0x00, 0x00, 0x00)
-            };
+            }.Select(c => c.R << 16 | c.G << 8 | c.B).ToArray();
         }
 
         public WriteableBitmap Framebuffer { get; private set; }
 
         void IPaletteFramebuffer.SetPixel(int x, int y, int color)
         {
-            Color value = this.palette[color];
-            this.pixelData[(x * 4) + (y * 1024)] = value.B;
-            this.pixelData[(x * 4) + (y * 1024) + 1] = value.G;
-            this.pixelData[(x * 4) + (y * 1024) + 2] = value.R;
-            this.pixelData[(x * 4) + (y * 1024) + 3] = 0xff;
+            this.pixelData[x + (y * 256)] = this.palette[color];
         }
 
         void IPaletteFramebuffer.Present()

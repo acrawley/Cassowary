@@ -42,11 +42,13 @@ namespace NesEmulator.PPU
 
         private IMemoryBus cpuBus;
         private IMemoryBus ppuBus;
-        private IMemoryBus oamBus;
 
         private bool oddFrame;
         private int scanline;
         private int cycle;
+
+        private byte[] paletteMemory;
+        private byte[] oam;
 
         #region Registers and Flags
 
@@ -140,7 +142,7 @@ namespace NesEmulator.PPU
             }
             set
             {
-                this.oamBus.Write(this.oamAddr, value);
+                this.oam[this.oamAddr] = value;
                 this.oamAddr++;
             }
         }
@@ -221,14 +223,19 @@ namespace NesEmulator.PPU
 
         #endregion
 
-        internal Ricoh2C02(IProcessorCore cpu, IMemoryBus cpuBus, IMemoryBus ppuBus, IMemoryBus oamBus)
+        internal Ricoh2C02(IProcessorCore cpu, IMemoryBus cpuBus, IMemoryBus ppuBus)
         {
             this.nmi = cpu.GetInterruptByName("NMI");
             this.cpuBus = cpuBus;
             this.ppuBus = ppuBus;
-            this.oamBus = oamBus;
+
+            this.paletteMemory = new byte[0x20];
+            this.oam = new byte[0x100];
 
             cpuBus.RegisterMappedDevice(this, 0x2000, 0x2007);
+
+            // Palette data
+            ppuBus.RegisterMappedDevice(this, 0x3F00, 0x3F1F);
 
             this.SetPpuCtrl(0x00);
             this.SetPpuMask(0x00);
@@ -242,7 +249,7 @@ namespace NesEmulator.PPU
             this.cycle = 0;
 
             this.vbiTimer = new Stopwatch();
-            this.vbiTimer.Start();
+            //this.vbiTimer.Start();
         }
 
         public void Step()
@@ -378,7 +385,7 @@ namespace NesEmulator.PPU
                                            (((tileCol & 0x02) == 0x02) ? 0x02 : 0x00));
                     byte paletteIndex = (byte)(((this.attributeShiftRegister & (0x03 << quadrant)) >> quadrant) & 0x03);
 
-                    int color = this.ppuBus.Read(0x3f00 + (paletteIndex * 4) + paletteOffset);
+                    int color = this.paletteMemory[(paletteIndex * 4) + paletteOffset];
 
                     this.Framebuffer.SetPixel(this.cycle - 1, this.scanline, color);
                     this.FetchTileData(tileRow, tileCol + 2, this.scanline & 0x07);
@@ -410,9 +417,9 @@ namespace NesEmulator.PPU
                     //    Debug.WriteLine("Frame too slow!");
                     //}
 
-                    while (this.vbiTimer.ElapsedTicks < Ricoh2C02.StopwatchTicksPerFrame) { }
+                    //while (this.vbiTimer.ElapsedTicks < Ricoh2C02.StopwatchTicksPerFrame) { }
 
-                    this.vbiTimer.Restart();
+                    //this.vbiTimer.Restart();
 
                     this.Framebuffer.Present();
 
@@ -443,6 +450,19 @@ namespace NesEmulator.PPU
 
         byte IMemoryMappedDevice.Read(int address)
         {
+            if (address >= 0x3F00 && address <= 0x3F1F)
+            {
+                address -= 0x3F00;
+
+                // Background color (lowest byte) is the same for all palettes
+                if ((address & 0x03) == 0)
+                {
+                    return this.paletteMemory[0];
+                }
+
+                return this.paletteMemory[address];
+            }
+
             switch (address)
             {
                 case Ricoh2C02.PPUCTRL_REGISTER:
@@ -468,6 +488,28 @@ namespace NesEmulator.PPU
 
         void IMemoryMappedDevice.Write(int address, byte value)
         {
+            if (address >= 0x3F00 && address <= 0x3F1F)
+            {
+                address -= 0x3F00;
+
+                // Background color (lowest byte) is the same for all palettes
+                if ((address & 0x03) == 0)
+                {
+                    this.paletteMemory[0x00] = value;
+                    this.paletteMemory[0x04] = value;
+                    this.paletteMemory[0x08] = value;
+                    this.paletteMemory[0x0C] = value;
+                    this.paletteMemory[0x10] = value;
+                    this.paletteMemory[0x14] = value;
+                    this.paletteMemory[0x18] = value;
+                    this.paletteMemory[0x1C] = value;
+                    return;
+                }
+
+                this.paletteMemory[address] = value;
+                return;
+            }
+
             switch (address)
             {
                 case Ricoh2C02.PPUCTRL_REGISTER:

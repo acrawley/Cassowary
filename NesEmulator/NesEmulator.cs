@@ -36,11 +36,8 @@ namespace NesEmulator
         private IProcessorCore cpu;
         private IMemoryBus cpuBus;
         private IMemoryBus ppuBus;
-        private IMemoryBus oamBus;
         private Memory cpuRam;
         private Memory ppuRam;
-        private Memory oam;
-        private PaletteMemory paletteRam;
         private Ricoh2C02 ppu;
         private NesControlPad controller;
 
@@ -58,11 +55,7 @@ namespace NesEmulator
             this.cpu = new Ricoh2A03(this.cpuBus);
             this.controller = new NesControlPad(this.cpuBus);
 
-            // OAM and palatte RAM are actually internal to the PPU, but modeling it like this makes it easy to expose
-            this.paletteRam = new PaletteMemory(this.ppuBus);
-            this.oamBus = new MemoryBus(8, "OAM Bus");
-            this.oam = new Memory("OAM RAM", this.oamBus, 0x00, 0x100);
-            this.ppu = new Ricoh2C02(this.cpu, this.cpuBus, this.ppuBus, this.oamBus);
+            this.ppu = new Ricoh2C02(this.cpu, this.cpuBus, this.ppuBus);
 
             // CPU RAM is mirrored between 0x0800 and 0x1FFF
             this.cpuBus.SetMirroringRange(0x0000, 0x07FF, 0x0800, 0x1FFF);
@@ -136,12 +129,10 @@ namespace NesEmulator
                 {
                     this.cpuBus,
                     this.ppuBus,
-                    this.oamBus,
                     this.loader,
                     this.cpu,
                     this.ppu,
                     this.cpuRam,
-                    this.oam,
                 };
             }
         }
