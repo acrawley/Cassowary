@@ -12,13 +12,14 @@ using EmulatorCore.Extensions;
 namespace NesEmulator.CPU
 {
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
-    internal class Ricoh2A03 : IProcessorCore
+    internal class Ricoh2A03 : IProcessorCore, IMemoryMappedDevice
     {
         #region Constants
 
         private const UInt16 NMI_VECTOR = 0xFFFA;
         private const UInt16 RESET_VECTOR = 0xFFFC;
         private const UInt16 IRQ_VECTOR = 0xFFFE;
+        private const UInt16 OAMDMA_ADDR = 0x4014;
 
         #endregion
 
@@ -33,6 +34,11 @@ namespace NesEmulator.CPU
         private bool nmiAsserted = false;
         private int irqAsserted = 0;
         private EventType pendingEvent = EventType.None;
+
+        private bool oamDmaActive;
+        private int oamDmaCycle;
+        private UInt16 oamDmaBaseAddress;
+        private byte oamDmaTempRegister;
 
         #endregion
 
@@ -81,6 +87,8 @@ namespace NesEmulator.CPU
         internal Ricoh2A03(IMemoryBus cpuBus)
         {
             this.cpuBus = cpuBus;
+
+            this.cpuBus.RegisterMappedDevice(this, Ricoh2A03.OAMDMA_ADDR);
 
             // Initial register values
             this.P = 0x34;
@@ -1287,6 +1295,36 @@ namespace NesEmulator.CPU
 
         #endregion
 
+        #region OAM DMA
+
+        private bool ProcessOamDma()
+        {
+            if (this.oamDmaActive)
+            {
+                if (this.oamDmaCycle == 512)
+                {
+                    this.oamDmaActive = false;
+                }
+                else if ((this.oamDmaCycle & 0x01) == 0x00)
+                {
+                    // Even cycle - read from main memory
+                    this.oamDmaTempRegister = this.cpuBus.Read(this.oamDmaBaseAddress + (this.oamDmaCycle >> 2));
+                }
+                else
+                {
+                    // Odd cycle - write to OAM port
+                    this.cpuBus.Write(PPU.Ricoh2C02.OAMDATA_REGISTER, this.oamDmaTempRegister);
+                }
+
+                this.oamDmaCycle++;
+                return true;
+            }
+
+            return false;
+        }
+
+        #endregion
+
         #region Helpers
 
         private string DebuggerDisplay
@@ -1452,6 +1490,11 @@ namespace NesEmulator.CPU
 
         int IProcessorCore.Step()
         {
+            if (this.ProcessOamDma())
+            {
+                return 1;
+            }
+
             if (this.CheckInterrupts())
             {
                 this.DispatchInterrupt(this.pendingEvent);
@@ -1523,6 +1566,26 @@ namespace NesEmulator.CPU
         IEnumerable<IProcessorRegister> IProcessorCore.Registers
         {
             get { return this.registers; }
+        }
+
+        #endregion
+
+        #region IMemoryMappedDevice Implementation
+
+        byte IMemoryMappedDevice.Read(int address)
+        {
+            return 0;
+        }
+
+        void IMemoryMappedDevice.Write(int address, byte value)
+        {
+            if (address == Ricoh2A03.OAMDMA_ADDR)
+            {
+                // Begin DMA transfer to OAM
+                this.oamDmaActive = true;
+                this.oamDmaCycle = 0;
+                this.oamDmaBaseAddress = (UInt16)(value * 0x100);
+            }
         }
 
         #endregion

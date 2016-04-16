@@ -17,14 +17,14 @@ namespace NesEmulator.PPU
     {
         #region Constants
 
-        private const int PPUCTRL_REGISTER = 0x2000;
-        private const int PPUMASK_REGISTER = 0x2001;
-        private const int PPUSTATUS_REGISTER = 0x2002;
-        private const int OAMADDR_REGISTER = 0x2003;
-        private const int OAMDATA_REGISTER = 0x2004;
-        private const int PPUSCROLL_REGISTER = 0x2005;
-        private const int PPUADDR_REGISTER = 0x2006;
-        private const int PPUDATA_REGISTER = 0x2007;
+        public const int PPUCTRL_REGISTER = 0x2000;
+        public const int PPUMASK_REGISTER = 0x2001;
+        public const int PPUSTATUS_REGISTER = 0x2002;
+        public const int OAMADDR_REGISTER = 0x2003;
+        public const int OAMDATA_REGISTER = 0x2004;
+        public const int PPUSCROLL_REGISTER = 0x2005;
+        public const int PPUADDR_REGISTER = 0x2006;
+        public const int PPUDATA_REGISTER = 0x2007;
 
         private static long StopwatchTicksPerFrame = Stopwatch.Frequency / 60;
 

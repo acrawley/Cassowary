@@ -55,9 +55,11 @@ namespace Emulator
 
         private void EmulatorThreadProc()
         {
-            emulator.LoadFile(@"Z:\public\ROMs\NES\World\Super Mario Bros. (W) [!].nes");
+            //emulator.LoadFile(@"Z:\public\ROMs\NES\World\Super Mario Bros. (W) [!].nes");
             //emulator.LoadFile(@"Z:\public\ROMs\NES\World\Mario Bros. (W) [!].nes");
             //emulator.LoadFile(@"Z:\public\ROMs\NES\USA\Arkanoid (U) [!].nes");
+            //emulator.LoadFile(@"Z:\public\ROMs\NES\World\Donkey Kong (W) (PRG1) [!].nes");
+            emulator.LoadFile(@"Z:\public\ROMs\NES\World\Duck Hunt (W) [!].nes");
             //emulator.LoadFile(@"D:\Emulators\NES\roms\tests\instr_test-v4\rom_singles\01-basics.nes");
 
             //emulator.LoadFile(@"D:\Emulators\NES\roms\tests\nestest.nes");
