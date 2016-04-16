@@ -26,6 +26,8 @@ namespace NesEmulator.PPU
         private const int PPUADDR_REGISTER = 0x2006;
         private const int PPUDATA_REGISTER = 0x2007;
 
+        private static long StopwatchTicksPerFrame = Stopwatch.Frequency / 60;
+
         #endregion
 
         #region MEF Imports
@@ -403,7 +405,13 @@ namespace NesEmulator.PPU
                 // VBlank scanlines
                 if (this.scanline == 241 && this.cycle == 1)
                 {
-                    while (this.vbiTimer.ElapsedTicks < (Stopwatch.Frequency / 60)) ;
+                    //if (this.vbiTimer.ElapsedTicks > Ricoh2C02.StopwatchTicksPerFrame)
+                    //{
+                    //    Debug.WriteLine("Frame too slow!");
+                    //}
+
+                    while (this.vbiTimer.ElapsedTicks < Ricoh2C02.StopwatchTicksPerFrame) { }
+
                     this.vbiTimer.Restart();
 
                     this.Framebuffer.Present();
