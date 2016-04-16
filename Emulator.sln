@@ -1,0 +1,45 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Emulator", "Emulator\Emulator.csproj", "{26EF645C-3C20-4458-93B1-65759FCA0DAA}"
+	ProjectSection(ProjectDependencies) = postProject
+		{161AD169-C28D-4380-8781-202C7CC7449A} = {161AD169-C28D-4380-8781-202C7CC7449A}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmulatorCore", "EmulatorCore\EmulatorCore.csproj", "{DE7A1297-4F35-4108-A3F0-121F60604CD3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NesEmulator", "NesEmulator\NesEmulator.csproj", "{161AD169-C28D-4380-8781-202C7CC7449A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{29FC151B-D83B-46CC-914B-6AB9D61990C0}"
+	ProjectSection(SolutionItems) = preProject
+		Performance1.psess = Performance1.psess
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{26EF645C-3C20-4458-93B1-65759FCA0DAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26EF645C-3C20-4458-93B1-65759FCA0DAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26EF645C-3C20-4458-93B1-65759FCA0DAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26EF645C-3C20-4458-93B1-65759FCA0DAA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE7A1297-4F35-4108-A3F0-121F60604CD3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE7A1297-4F35-4108-A3F0-121F60604CD3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE7A1297-4F35-4108-A3F0-121F60604CD3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE7A1297-4F35-4108-A3F0-121F60604CD3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{161AD169-C28D-4380-8781-202C7CC7449A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{161AD169-C28D-4380-8781-202C7CC7449A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{161AD169-C28D-4380-8781-202C7CC7449A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{161AD169-C28D-4380-8781-202C7CC7449A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
