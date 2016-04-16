@@ -747,13 +747,13 @@ namespace NesEmulator.CPU
             // NOTE: The flags value pushed seems to always have bits 5 and 6 set, so the following
             //  testcase will set A = 0b01100000 (0x30).  Verified in Visual6502:
             //  http://visual6502.org/JSSim/expert.html?a=0&d=a90048a9ff2808684c0800
-            //    0000: A9 00    LDA #00
-            //    0002: 48       PHA
-            //    0003: A9 FF    LDA #FF
-            //    0005: 28       PLP
-            //    0006: 08       PHP
-            //    0007: 68       PLA
-            //    0008: 4C 08 00 JMP $0008
+            //    0000: A9 00    LDA #00    ; A = 0x00
+            //    0002: 48       PHA        ; Push A
+            //    0003: A9 FF    LDA #FF    ; A = 0xFF
+            //    0005: 28       PLP        ; Pop 0x00 into status register
+            //    0006: 08       PHP        ; Push status register
+            //    0007: 68       PLA        ; Pop status register into A
+            //    0008: 4C 08 00 JMP $0008  ; Infinite loop
             this.PushStack((byte)(this.P | 0x30));
             return 0;
         }
@@ -1283,8 +1283,8 @@ namespace NesEmulator.CPU
                 this.PushStack((byte)(this.PC >> 8));
                 this.PushStack((byte)(this.PC & 0xFF));
 
-                // Push flags, setting the B flag if this was triggered by a BRK
-                this.PushStack((byte)(this.P | (type == EventType.BRK ? 0x10 : 0x00)));
+                // Push flags - bit 6 is always set, bit 5 is set if this was triggered by a BRK
+                this.PushStack((byte)(this.P | (type == EventType.BRK ? 0x30 : 0x20)));
 
                 vector = type == EventType.NMI ? Ricoh2A03.NMI_VECTOR : Ricoh2A03.IRQ_VECTOR;
             }
