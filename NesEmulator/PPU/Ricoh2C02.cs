@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using EmulatorCore.Components;
 using EmulatorCore.Components.CPU;
 using EmulatorCore.Components.Graphics;
@@ -37,10 +33,12 @@ namespace NesEmulator.PPU
 
         #endregion
 
-        private IProcessorInterrupt nmi;
-        private IDisposable nmiAssertion;
+        #region Private Fields
 
-        private IMemoryBus cpuBus;
+        private IProcessorInterrupt vbi;
+        private IDisposable vbiAssertion;
+        Stopwatch vbiTimer;
+
         private IMemoryBus ppuBus;
 
         private bool oddFrame;
@@ -48,7 +46,46 @@ namespace NesEmulator.PPU
         private int cycle;
 
         private byte[] paletteMemory;
-        private byte[] oam;
+        private byte[] primaryOam;
+        private byte[] secondaryOam;
+
+        #endregion
+
+        #region Constructor
+
+        internal Ricoh2C02(IProcessorCore cpu, IMemoryBus cpuBus, IMemoryBus ppuBus)
+        {
+            this.ppuBus = ppuBus;
+
+            this.vbi = cpu.GetInterruptByName("NMI");
+            this.vbiTimer = new Stopwatch();
+
+            this.paletteMemory = new byte[0x20];
+            this.primaryOam = new byte[0x100];
+            this.secondaryOam = new byte[0x20];
+
+            // PPU registers on CPU bus
+            cpuBus.RegisterMappedDevice(this, 0x2000, 0x2007);
+
+            // Palette data
+            ppuBus.RegisterMappedDevice(this, 0x3F00, 0x3F1F);
+
+            // Set up power-on state
+            this.SetPpuCtrl(0x00);
+            this.SetPpuMask(0x00);
+            this.SetOamAddr(0x00);
+
+            this.spriteZeroHit = false;
+            this.spriteOverflow = false;
+            this.isVBlank = false;
+            this.oddFrame = false;
+            this.scanline = -1;
+            this.cycle = 0;
+
+            this.vbiTimer.Start();
+        }
+
+        #endregion
 
         #region Registers and Flags
 
@@ -137,13 +174,28 @@ namespace NesEmulator.PPU
         {
             get
             {
-                // TODO - this is weird
-                return 0x00;
+                if (this.overrideOamRead)
+                {
+                    // OAMDATA always returns 0xFF when the override flag is set during cycles 1-64
+                    //  of a visible scanline
+                    return 0xFF;
+                }
+
+                return this.primaryOam[this.oamAddr];
             }
             set
             {
-                this.oam[this.oamAddr] = value;
-                this.oamAddr++;
+                if (this.scanline <= 239 && (this.showSprites || this.showBackground))
+                {
+                    // When rendering visible scanlines, writes to OAMDATA don't actually update OAM,
+                    //  but they do increment the top 6 bits of OAMADDR
+                    this.oamAddr += 4;
+                }
+                else
+                {
+                    this.primaryOam[this.oamAddr] = value;
+                    this.oamAddr++;
+                }
             }
         }
 
@@ -223,35 +275,6 @@ namespace NesEmulator.PPU
 
         #endregion
 
-        internal Ricoh2C02(IProcessorCore cpu, IMemoryBus cpuBus, IMemoryBus ppuBus)
-        {
-            this.nmi = cpu.GetInterruptByName("NMI");
-            this.cpuBus = cpuBus;
-            this.ppuBus = ppuBus;
-
-            this.paletteMemory = new byte[0x20];
-            this.oam = new byte[0x100];
-
-            cpuBus.RegisterMappedDevice(this, 0x2000, 0x2007);
-
-            // Palette data
-            ppuBus.RegisterMappedDevice(this, 0x3F00, 0x3F1F);
-
-            this.SetPpuCtrl(0x00);
-            this.SetPpuMask(0x00);
-            this.SetOamAddr(0x00);
-
-            this.spriteZeroHit = false;
-            this.spriteOverflow = false;
-            this.isVBlank = false;
-            this.oddFrame = false;
-            this.scanline = -1;
-            this.cycle = 0;
-
-            this.vbiTimer = new Stopwatch();
-            //this.vbiTimer.Start();
-        }
-
         public void Step()
         {
             // PPU ticks 3 times during each CPU cycle
@@ -260,12 +283,368 @@ namespace NesEmulator.PPU
             Tick();
         }
 
-        Stopwatch vbiTimer;
+        private void Tick()
+        {
+            if (this.cycle > 340)
+            {
+                this.cycle = 0;
+                this.scanline++;
+            }
 
-        private byte nametableFetch;
-        private byte attributeTableFetch;
-        private byte tileBitmapLoFetch;
-        private byte tileBitmapHiFetch;
+            if (this.scanline > 260)
+            {
+                this.scanline = -1;
+                this.oddFrame = !this.oddFrame;
+            }
+
+            if (this.scanline == -1)
+            {
+                // Pre-render scanline
+                TickPreRenderScanline();
+            }
+            else if (this.scanline <= 239)
+            {
+                // Visible scanlines
+                TickVisibleScanline();
+            }
+            else if (this.scanline == 240)
+            {
+                // Post-render scanline - PPU is idle
+            }
+            else //if (this.scanline <= 260)
+            {
+                // VBlank scanlines
+                TickVBlankScanline();
+            }
+
+            this.cycle++;
+        }
+
+        private void TickPreRenderScanline()
+        {
+            if (this.cycle == 0)
+            {
+                // 2C02 BUG: If OAMADDR is set to a value of 0x08 or greater at the start of a frame, the first 8
+                //  bytes of OAM are replaced with the 8 bytes starting at OAMADDR & 0xF8. 
+                if (this.oamAddr >= 0x08)
+                {
+                    for (int i = 0; i < 8; i++)
+                    {
+                        this.primaryOam[i] = this.primaryOam[(this.oamAddr & 0xF8) + i];
+                    }
+                }
+            }
+            else if (this.cycle == 1)
+            {
+                // Reset per-frame flags on scanline -1, cycle 1
+                this.isVBlank = false;
+                this.spriteZeroHit = false;
+                this.spriteOverflow = false;
+
+                this.oddFrame = !this.oddFrame;
+
+                if (this.vbiAssertion != null)
+                {
+                    this.vbiAssertion.Dispose();
+                    this.vbiAssertion = null;
+                }
+            }
+            else if (this.cycle >= 321 && this.cycle <= 336 && this.showBackground)
+            {
+                if (this.cycle <= 328)
+                {
+                    this.FetchTileData(0, 0, 0);
+                }
+                else
+                {
+                    this.FetchTileData(0, 1, 0);
+                }
+            }
+            else if (this.cycle == 339 && this.oddFrame)
+            {
+                // Pre-render scanline is one cycle shorter on odd frames
+                this.cycle++;
+            }
+        }
+
+        private void TickVisibleScanline()
+        {
+            if (cycle == 0)
+            {
+                // Idle
+            }
+            else if (cycle >= 1 && cycle <= 256)
+            {
+                int pixelColor = 0;
+                int bgPalette = 0;
+
+                if (this.showBackground)
+                {
+                    // Use data from shift registers to calculate pixel color
+                    bgPalette = (((this.tileBitmapLoShiftRegister & 0x8000) == 0x8000) ? 0x01 : 0x00) +
+                                (((this.tileBitmapHiShiftRegister & 0x8000) == 0x8000) ? 0x02 : 0x00);
+
+                    byte tileRow = (byte)(this.scanline >> 3);
+                    byte tileCol = (byte)((this.cycle - 1) >> 3);
+
+                    byte quadrant = (byte)((((tileRow & 0x02) == 0x02) ? 0x04 : 0x00) +
+                                           (((tileCol & 0x02) == 0x02) ? 0x02 : 0x00));
+                    byte paletteIndex = (byte)(((this.attributeShiftRegister & (0x03 << quadrant)) >> quadrant) & 0x03);
+
+                    pixelColor = this.paletteMemory[(paletteIndex * 4) + bgPalette];
+
+                    this.FetchTileData(tileRow, tileCol + 2, this.scanline & 0x07);
+                }
+
+                if (this.showSprites)
+                {
+                    bool foundSprite = false;
+                    // Process sprites in priority order
+                    for (int i = 0; i < 8; i++)
+                    {
+                        if (this.spriteXPositionCounter[i] == 0)
+                        {
+                            if (!foundSprite)
+                            {
+                                int spritePalette = (((this.spriteBitmapLoShiftRegister[i] & 0x80) == 0x80) ? 0x01 : 0x00) +
+                                                    (((this.spriteBitmapHiShiftRegister[i] & 0x80) == 0x80) ? 0x02 : 0x00);
+
+                                if (spritePalette != 0)
+                                {
+                                    // Found a sprite with a non-transparent pixel at this location
+                                    foundSprite = true;
+
+                                    // Use the sprite's color if the background is transparent or the sprite has foreground priority
+                                    if (bgPalette == 0 || ((this.spriteAttributeLatch[i] & 0x20) == 0x00))
+                                    {
+                                        pixelColor = this.paletteMemory[((this.spriteAttributeLatch[i] & 0x03) * 4) + 16 + spritePalette];
+
+                                        if (i == 0 && this.spriteZeroPresent)
+                                        {
+                                            this.spriteZeroHit = true;
+                                        }
+                                    }
+                                }
+                            }
+
+                            this.spriteBitmapLoShiftRegister[i] <<= 1;
+                            this.spriteBitmapHiShiftRegister[i] <<= 1;
+                        }
+                        else
+                        {
+                            this.spriteXPositionCounter[i]--;
+                        }
+                    }
+                }
+
+                this.Framebuffer.SetPixel(this.cycle - 1, this.scanline, pixelColor);
+            }
+            else if (cycle <= 320 && this.showSprites)
+            {
+                // Pre-fetch sprite tiles for next scanline
+                this.FetchSpriteData();
+
+            }
+            else if (cycle <= 336 && this.showBackground)
+            {
+                // Pre-fetch first two background tiles for next scanline
+                if (cycle <= 328)
+                {
+                    this.FetchTileData((this.scanline + 1) >> 3, 0, (this.scanline + 1) & 0x07);
+                }
+                else
+                {
+                    this.FetchTileData((this.scanline + 1) >> 3, 1, (this.scanline + 1) & 0x07);
+                }
+            }
+
+            // Sprite evaluation for next scanline
+            DoSpriteEvaluation();
+        }
+
+        private void TickVBlankScanline()
+        {
+            if (this.scanline == 241 && this.cycle == 1)
+            {
+                // If speed throttling is enabled, wait until it's been at least 1/60th of a second since the last VBlank
+                if (this.vbiTimer.IsRunning)
+                {
+                    //if (this.vbiTimer.ElapsedTicks > Ricoh2C02.StopwatchTicksPerFrame)
+                    //{
+                    //    Debug.WriteLine("Frame too slow - {0} > {1}!", this.vbiTimer.ElapsedTicks, Ricoh2C02.StopwatchTicksPerFrame);
+                    //}
+
+                    while (this.vbiTimer.ElapsedTicks < Ricoh2C02.StopwatchTicksPerFrame)
+                    {
+                    }
+
+                    this.vbiTimer.Restart();
+                }
+
+                this.Framebuffer.Present();
+
+                // VBlank flag is set on the second tick of line 241
+                this.isVBlank = true;
+
+                // Assert NMI on CPU, if enabled
+                if (this.generateNMI)
+                {
+                    this.vbiAssertion = this.vbi.Assert();
+                }
+            }
+        }
+
+        #region Sprite Evaluation Logic
+
+        private SpriteEvaluationState currentState;
+        private int spritesFound;
+        bool spriteZeroPresent;
+        private byte spriteEvalTemp;
+        bool overrideOamRead;        
+
+        private enum SpriteEvaluationState
+        {
+            EvaluateYCoord,
+            CopyTileIndex,
+            CopyAttributes,
+            CopyXCoord,
+            OverflowCheck,
+            EvaluationComplete
+        }
+
+        private void DoSpriteEvaluation()
+        {
+            if (this.cycle == 0)
+            {
+                this.currentState = SpriteEvaluationState.EvaluateYCoord;
+                this.spritesFound = 0;
+                this.spriteZeroPresent = false;
+            }
+            else if (this.cycle <= 64)
+            {
+                this.overrideOamRead = true;
+
+                if ((this.cycle & 0x01) == 0x01)
+                {
+                    // Odd cycle - write 0xFF to secondary OAM
+                    this.secondaryOam[this.cycle >> 1] = 0xFF;
+                }
+            }
+            else if (this.cycle <= 256)
+            {
+                this.overrideOamRead = false;
+
+                if ((this.cycle & 0x01) == 0x01)
+                {
+                    // Odd cycle - read data for the current sprite from primary OAM
+                    // NOTE: This assumes OAMADDR was reset to 0 as expected during ticks 257-320 of the previous
+                    //  scanline.  If game code modifies OAMADDR afterwards, lots of weird stuff can happen.
+                    this.spriteEvalTemp = this.primaryOam[this.oamAddr];
+                }
+                else
+                {
+                    // Even cycle - write to secondary OAM
+                    switch (this.currentState)
+                    {
+                        case SpriteEvaluationState.EvaluateYCoord:
+                            this.secondaryOam[this.spritesFound * 4] = spriteEvalTemp;
+
+                            // If the Y coordinate of the sprite is in range, we need to copy the rest of its data
+                            //  from primary OAM
+                            if (this.scanline >= this.spriteEvalTemp && this.scanline < (this.spriteEvalTemp + 8))
+                            {
+                                this.spriteZeroPresent = this.cycle == 66;
+
+                                currentState = SpriteEvaluationState.CopyTileIndex;
+                                this.oamAddr++;
+                            }
+                            else
+                            {
+                                // Sprite was not in range, check the next one
+                                this.IncrementOamAddrAndCheckOverflow(4);
+                            }
+                            break;
+
+                        case SpriteEvaluationState.CopyTileIndex:
+                            this.secondaryOam[(this.spritesFound * 4) + 1] = spriteEvalTemp;
+                            this.currentState = SpriteEvaluationState.CopyAttributes;
+                            this.IncrementOamAddrAndCheckOverflow(1);
+                            break;
+
+                        case SpriteEvaluationState.CopyAttributes:
+                            this.secondaryOam[(this.spritesFound * 4) + 2] = spriteEvalTemp;
+                            this.currentState = SpriteEvaluationState.CopyXCoord;
+                            this.IncrementOamAddrAndCheckOverflow(1);
+                            break;
+
+                        case SpriteEvaluationState.CopyXCoord:
+                            this.secondaryOam[(this.spritesFound * 4) + 3] = spriteEvalTemp;
+
+                            this.spritesFound++;
+                            if (this.spritesFound == 8)
+                            {
+                                // Found 8 sprites for this line - continue processing to check for overflow
+                                this.currentState = SpriteEvaluationState.OverflowCheck;
+                            }
+                            else
+                            {
+                                // Look for another sprite on this line
+                                this.currentState = SpriteEvaluationState.EvaluateYCoord;
+                            }
+
+                            this.IncrementOamAddrAndCheckOverflow(1);
+                            break;
+
+                        case SpriteEvaluationState.OverflowCheck:
+                            if (this.scanline >= this.spriteEvalTemp && this.scanline < (this.spriteEvalTemp + 8))
+                            {
+                                // Found another sprite on a full scanline
+                                this.spriteOverflow = true;
+                                this.IncrementOamAddrAndCheckOverflow(4);
+                            }
+                            else
+                            {
+                                // Sprite isn't on this scanline, check the next one
+                                // 2C02 BUG: The OAM address is incremented by 5 in this case, so the Y coordinate
+                                //  evaluated for further sprites won't actually be the Y coordinate
+                                this.IncrementOamAddrAndCheckOverflow(5);
+                            }
+
+                            break;
+
+                        case SpriteEvaluationState.EvaluationComplete:
+                            // Do nothing
+                            break;
+                    }
+                }
+            }
+            else if (this.cycle <= 320)
+            {
+                this.oamAddr = 0;
+            }
+        }
+
+        private void IncrementOamAddrAndCheckOverflow(int increment)
+        {
+            byte temp = (byte)(this.oamAddr + increment);
+            if (temp < this.oamAddr)
+            {
+                this.currentState = SpriteEvaluationState.EvaluationComplete;
+            }
+            else
+            {
+                this.oamAddr = temp;
+            }
+        }
+
+        #endregion
+
+        #region Background Tile Fetch Logic
+
+        private byte nametableLatch;
+        private byte attributeTableLatch;
+        private byte tileBitmapLoLatch;
+        private byte tileBitmapHiLatch;
 
         private UInt16 tileBitmapLoShiftRegister;
         private UInt16 tileBitmapHiShiftRegister;
@@ -287,7 +666,7 @@ namespace NesEmulator.PPU
                     break;
                 case 1:
                     // Cycle 1: Read nametable data
-                    this.nametableFetch = this.ppuBus.Read(this.ppuAddr);
+                    this.nametableLatch = this.ppuBus.Read(this.ppuAddr);
                     break;
                 case 2:
                     // Cycle 2: Put address of attribute table data on the bus
@@ -295,147 +674,124 @@ namespace NesEmulator.PPU
                     break;
                 case 3:
                     // Cycle 3: Read attribute data
-                    this.attributeTableFetch = this.ppuBus.Read(this.ppuAddr);
+                    this.attributeTableLatch = this.ppuBus.Read(this.ppuAddr);
                     break;
                 case 4:
                     // Cycle 4: Put address of low byte of tile bitmap on the bus
-                    this.ppuAddr = (UInt16)(this.backgroundPatternTableAddr + (this.nametableFetch * 16 + tileRow));
+                    this.ppuAddr = (UInt16)(this.backgroundPatternTableAddr + (this.nametableLatch * 16 + tileRow));
                     break;
                 case 5:
                     // Cycle 5: Read low byte of tile bitmap
-                    this.tileBitmapLoFetch = this.ppuBus.Read(this.ppuAddr);
+                    this.tileBitmapLoLatch = this.ppuBus.Read(this.ppuAddr);
                     break;
                 case 6:
                     // Cycle 6: Put address of high byte of tile bitmap on the bus
-                    this.ppuAddr = (UInt16)(this.backgroundPatternTableAddr + (this.nametableFetch * 16) + 8 + tileRow);
+                    this.ppuAddr = (UInt16)(this.backgroundPatternTableAddr + (this.nametableLatch * 16) + 8 + tileRow);
                     break;
                 case 7:
                     // Cycle 7: Read high byte of tile bitmap and shift into the registers
-                    this.tileBitmapHiFetch = this.ppuBus.Read(this.ppuAddr);
+                    this.tileBitmapHiLatch = this.ppuBus.Read(this.ppuAddr);
 
-                    this.tileBitmapHiShiftRegister |= this.tileBitmapHiFetch;
-                    this.tileBitmapLoShiftRegister |= this.tileBitmapLoFetch;
+                    this.tileBitmapHiShiftRegister |= this.tileBitmapHiLatch;
+                    this.tileBitmapLoShiftRegister |= this.tileBitmapLoLatch;
 
                     this.attributeShiftRegister >>= 8;
-                    this.attributeShiftRegister |= (UInt16)(this.attributeTableFetch << 8);
+                    this.attributeShiftRegister |= (UInt16)(this.attributeTableLatch << 8);
                     break;
             }
         }
 
-        private void Tick()
+        #endregion
+
+        #region Sprite Tile Fetch Logic
+
+        private byte[] spriteBitmapLoShiftRegister = new byte[8];
+        private byte[] spriteBitmapHiShiftRegister = new byte[8];
+        private byte[] spriteAttributeLatch = new byte[8];
+        private byte[] spriteXPositionCounter = new byte[8];
+
+        private void FetchSpriteData()
         {
-            if (this.cycle > 340)
+            int step = (cycle - 1) & 0x07;
+            int sprite = (cycle - 257) >> 3;
+
+            switch (step)
             {
-                this.cycle = 0;
-                this.scanline++;
-            }
+                case 0:
+                    // Cycle 0: Put address of nametable garbage on bus
+                    this.ppuAddr = 0x00; // TODO: Where does the real thing read from?
+                    break;
 
-            if (this.scanline > 260)
-            {
-                this.scanline = -1;
-                this.oddFrame = !this.oddFrame;
-            }
+                case 1:
+                    // Cycle 1: Read and discard nametable garbage
+                    this.ppuBus.Read(this.ppuAddr);
+                    break;
 
-            if (this.scanline == -1)
-            {
-                // Pre-render scanline
-                if (cycle == 1)
-                {
-                    // Reset per-frame flags on scanline -1, cycle 1
-                    this.isVBlank = false;
-                    this.spriteZeroHit = false;
-                    this.spriteOverflow = false;
-                    this.oddFrame = !this.oddFrame;
+                case 2:
+                    // Cycle 2: Put address of nametable garbage on bus, load attribute byte
+                    this.ppuAddr = 0x00;
+                    this.spriteAttributeLatch[sprite] = this.secondaryOam[(sprite * 4) + 2];
+                    break;
 
-                    if (this.nmiAssertion != null)
+                case 3:
+                    // Cycle 3: Read and discard nametable garbage, load X coordinate
+                    this.ppuBus.Read(this.ppuAddr);
+                    this.spriteXPositionCounter[sprite] = this.secondaryOam[(sprite * 4) + 3];
+                    break;
+
+                case 4:
+                    // Cycle 4: Put address of low byte of sprite bitmap on the bus
+                    this.ppuAddr = (UInt16)(this.spritePatternTableAddr + (this.secondaryOam[(sprite * 4) + 1] * 16 + (this.scanline - this.secondaryOam[(sprite * 4)])));
+                    break;
+
+                case 5:
                     {
-                        this.nmiAssertion.Dispose();
-                        this.nmiAssertion = null;
+                        // Cycle 5: Read low byte of sprite bitmap
+                        byte pattern = this.ppuBus.Read(this.ppuAddr);
+
+                        if ((this.spriteAttributeLatch[sprite] & 0x40) == 0x40)
+                        {
+                            // Flip pattern horizontally
+                            pattern = (byte)(((pattern * 0x0802u & 0x22110u) | (pattern * 0x8020u & 0x88440u)) * 0x10101u >> 16);
+                        }
+
+                        if (sprite >= this.spritesFound)
+                        {
+                            // Sprite not present - replace with transparent tile
+                            pattern = 0x00;
+                        }
+
+                        this.spriteBitmapLoShiftRegister[sprite] = pattern;
                     }
-                }
-                else if (cycle >= 321 && cycle <= 336 && this.showBackground)
-                {
-                    if (cycle <= 328)
+                    break;
+
+                case 6:
+                    // Cycle 6: Put address of high byte of sprite bitmap on the bus
+                    this.ppuAddr = (UInt16)(this.spritePatternTableAddr + (this.secondaryOam[(sprite * 4) + 1] * 16 + 8 + (this.scanline - this.secondaryOam[(sprite * 4)])));
+                    break;
+
+                case 7:
                     {
-                        this.FetchTileData(0, 0, 0);
+                        // Cycle 7: Read high byte of sprite bitmap
+                        byte pattern = this.ppuBus.Read(this.ppuAddr);
+
+                        if ((this.spriteAttributeLatch[sprite] & 0x40) == 0x40)
+                        {
+                            pattern = (byte)(((pattern * 0x0802u & 0x22110u) | (pattern * 0x8020u & 0x88440u)) * 0x10101u >> 16);
+                        }
+
+                        if (sprite >= this.spritesFound)
+                        {
+                            pattern = 0x00;
+                        }
+
+                        this.spriteBitmapHiShiftRegister[sprite] = pattern;
                     }
-                    else
-                    {
-                        this.FetchTileData(0, 1, 0);
-                    }
-                }
-                else if (cycle == 338 && this.oddFrame)
-                {
-                    // Pre-render scanline is one cycle shorter on odd frames
-                    cycle++;
-                }
+                    break;
             }
-            else if (this.scanline <= 239)
-            {
-                // Visible scanlines
-                if (cycle >= 1 && cycle <= 256 && this.showBackground)
-                {
-                    int paletteOffset = (((this.tileBitmapLoShiftRegister & 0x8000) == 0x8000) ? 0x01 : 0x00) +
-                                        (((this.tileBitmapHiShiftRegister & 0x8000) == 0x8000) ? 0x02 : 0x00);
-
-                    byte tileRow = (byte)(this.scanline >> 3);
-                    byte tileCol = (byte)((this.cycle - 1) >> 3);
-
-                    byte quadrant = (byte)((((tileRow & 0x02) == 0x02) ? 0x04 : 0x00) +
-                                           (((tileCol & 0x02) == 0x02) ? 0x02 : 0x00));
-                    byte paletteIndex = (byte)(((this.attributeShiftRegister & (0x03 << quadrant)) >> quadrant) & 0x03);
-
-                    int color = this.paletteMemory[(paletteIndex * 4) + paletteOffset];
-
-                    this.Framebuffer.SetPixel(this.cycle - 1, this.scanline, color);
-                    this.FetchTileData(tileRow, tileCol + 2, this.scanline & 0x07);
-                }
-                else if (cycle >= 321 && cycle <= 336 && this.showBackground)
-                {
-                    // Pre-fetch first two tiles for next scanline
-                    if (cycle <= 328)
-                    {
-                        this.FetchTileData((this.scanline + 1) >> 3, 0, (this.scanline + 1) & 0x07);
-                    }
-                    else
-                    {
-                        this.FetchTileData((this.scanline + 1) >> 3, 1, (this.scanline + 1) & 0x07);
-                    }
-                }
-            }
-            else if (this.scanline == 240)
-            {
-                // Post-render scanline - PPU is idle
-            }
-            else //if (this.scanline <= 260)
-            {
-                // VBlank scanlines
-                if (this.scanline == 241 && this.cycle == 1)
-                {
-                    //if (this.vbiTimer.ElapsedTicks > Ricoh2C02.StopwatchTicksPerFrame)
-                    //{
-                    //    Debug.WriteLine("Frame too slow!");
-                    //}
-
-                    //while (this.vbiTimer.ElapsedTicks < Ricoh2C02.StopwatchTicksPerFrame) { }
-
-                    //this.vbiTimer.Restart();
-
-                    this.Framebuffer.Present();
-
-                    // VBlank flag is set on the second tick of line 241
-                    this.isVBlank = true;
-
-                    // Assert NMI on CPU, if enabled
-                    if (this.generateNMI)
-                    {
-                        this.nmiAssertion = this.nmi.Assert();
-                    }
-                }
-            }
-
-            this.cycle++;
         }
+
+        #endregion
 
         #region IEmulatorComponent Implementation
 
@@ -452,15 +808,7 @@ namespace NesEmulator.PPU
         {
             if (address >= 0x3F00 && address <= 0x3F1F)
             {
-                address -= 0x3F00;
-
-                // Background color (lowest byte) is the same for all palettes
-                if ((address & 0x03) == 0)
-                {
-                    return this.paletteMemory[0];
-                }
-
-                return this.paletteMemory[address];
+                return this.paletteMemory[address - 0x3F00];
             }
 
             switch (address)

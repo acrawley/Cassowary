@@ -1308,7 +1308,7 @@ namespace NesEmulator.CPU
                 else if ((this.oamDmaCycle & 0x01) == 0x00)
                 {
                     // Even cycle - read from main memory
-                    this.oamDmaTempRegister = this.cpuBus.Read(this.oamDmaBaseAddress + (this.oamDmaCycle >> 2));
+                    this.oamDmaTempRegister = this.cpuBus.Read(this.oamDmaBaseAddress + (this.oamDmaCycle >> 1));
                 }
                 else
                 {
