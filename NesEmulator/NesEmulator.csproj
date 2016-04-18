@@ -44,7 +44,11 @@
     <Compile Include="CPU\InstructionData.cs" />
     <Compile Include="CPU\InterruptWrapper.cs" />
     <Compile Include="CPU\RegisterWrapper.cs" />
-    <Compile Include="Input\NesController.cs" />
+    <Compile Include="Input\Devices\ButtonInputElement.cs" />
+    <Compile Include="Input\Devices\NesControlPad.cs" />
+    <Compile Include="Input\Devices\INesInputDevice.cs" />
+    <Compile Include="Input\Devices\INesInputDeviceFactory.cs" />
+    <Compile Include="Input\InputManager.cs" />
     <Compile Include="NesEmulator.cs" />
     <Compile Include="PPU\DefaultPalette.cs" />
     <Compile Include="PPU\Ricoh2C02.cs" />

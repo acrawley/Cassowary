@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using EmulatorCore.Components;
+using EmulatorCore.Components.Core;
 using EmulatorCore.Components.Memory;
 
 namespace EmulatorCore.Memory

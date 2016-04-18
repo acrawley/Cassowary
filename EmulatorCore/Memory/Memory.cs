@@ -1,5 +1,6 @@
 ﻿using System;
 using EmulatorCore.Components;
+using EmulatorCore.Components.Core;
 using EmulatorCore.Components.Memory;
 
 namespace EmulatorCore.Memory

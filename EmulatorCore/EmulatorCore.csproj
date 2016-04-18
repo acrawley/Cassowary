@@ -50,7 +50,11 @@
     <Compile Include="Components\Graphics\IPaletteFramebuffer.cs" />
     <Compile Include="Components\Graphics\PaletteEntry.cs" />
     <Compile Include="Components\IEmulator.cs" />
-    <Compile Include="Components\IEmulatorComponent.cs" />
+    <Compile Include="Components\Core\IEmulatorComponent.cs" />
+    <Compile Include="Components\Input\IButtonInputElement.cs" />
+    <Compile Include="Components\Input\IInputDevice.cs" />
+    <Compile Include="Components\Input\IInputElement.cs" />
+    <Compile Include="Components\Input\IInputReader.cs" />
     <Compile Include="Components\Memory\IMemoryBus.cs" />
     <Compile Include="Components\Memory\IMemoryMappedDevice.cs" />
     <Compile Include="Components\Memory\IMemoryMapping.cs" />
@@ -71,6 +75,7 @@
     <Compile Include="Services\UI\ViewModelBase.cs" />
     <Compile Include="Services\UI\Implementation\ViewModelService.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>mkdir $(SolutionDir)\bin\

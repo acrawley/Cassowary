@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using EmulatorCore.Components.Core;
 
 namespace EmulatorCore.Components.Memory
 {

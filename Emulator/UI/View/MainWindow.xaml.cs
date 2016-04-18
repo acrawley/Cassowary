@@ -37,6 +37,9 @@ namespace Emulator
         public MainWindow()
         {
             InitializeComponent();
+
+            // Make sure we can receive input
+            this.framebuffer.Focus();
         }
     }
 }

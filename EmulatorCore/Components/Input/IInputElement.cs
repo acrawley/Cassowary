@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using EmulatorCore.Components.Core;
 
-namespace EmulatorCore.Components
+namespace EmulatorCore.Components.Input
 {
-    public interface IEmulatorComponent
+    public interface IInputElement
     {
         string Name { get; }
+        string Id { get; }
     }
 }

@@ -2,6 +2,7 @@
 using System.ComponentModel.Composition;
 using System.Diagnostics;
 using EmulatorCore.Components;
+using EmulatorCore.Components.Core;
 using EmulatorCore.Components.CPU;
 using EmulatorCore.Components.Graphics;
 using EmulatorCore.Components.Memory;

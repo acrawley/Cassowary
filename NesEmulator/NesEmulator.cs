@@ -14,6 +14,7 @@ using System;
 using NesEmulator.Input;
 using System.ComponentModel.Composition.Hosting;
 using System.Threading;
+using EmulatorCore.Components.Core;
 
 namespace NesEmulator
 {
@@ -39,7 +40,7 @@ namespace NesEmulator
         private Memory cpuRam;
         private Memory ppuRam;
         private Ricoh2C02 ppu;
-        private NesControlPad controller;
+        private InputManager inputManager;
 
         private bool run;
 
@@ -53,7 +54,7 @@ namespace NesEmulator
             this.cpuRam = new Memory("CPU RAM", this.cpuBus, 0x0000, 0x800);
             this.ppuRam = new Memory("PPU RAM", this.ppuBus, 0x2000, 0x1000);
             this.cpu = new Ricoh2A03(this.cpuBus);
-            this.controller = new NesControlPad(this.cpuBus);
+            this.inputManager = new InputManager(this.cpuBus);
 
             this.ppu = new Ricoh2C02(this.cpu, this.cpuBus, this.ppuBus);
 
@@ -133,6 +134,7 @@ namespace NesEmulator
                     this.cpu,
                     this.ppu,
                     this.cpuRam,
+                    this.inputManager,
                 };
             }
         }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using EmulatorCore.Components;
+using EmulatorCore.Components.Core;
 using EmulatorCore.Components.Memory;
 using NesEmulator.ROM.Readers;
 
