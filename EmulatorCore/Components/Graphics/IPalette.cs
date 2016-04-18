@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 
 namespace EmulatorCore.Components.Graphics
 {
-    public interface IPaletteFramebuffer
+    public interface IPalette
     {
-        void Initialize(int width, int height, int paletteSize);
-        void SetPixel(int x, int y, int color);
-        void Present();
+        IEnumerable<IPaletteEntry> PaletteEntries { get; }
+
+        string Name { get; }
     }
 }

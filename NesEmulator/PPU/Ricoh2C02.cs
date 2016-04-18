@@ -9,7 +9,7 @@ using EmulatorCore.Extensions;
 
 namespace NesEmulator.PPU
 {
-    internal class Ricoh2C02 : IEmulatorComponent, IMemoryMappedDevice
+    internal class Ricoh2C02 : IEmulatorComponent, IMemoryMappedDevice, IPartImportsSatisfiedNotification
     {
         #region Constants
 
@@ -83,6 +83,15 @@ namespace NesEmulator.PPU
             this.cycle = 0;
 
             this.vbiTimer.Start();
+        }
+
+        #endregion
+
+        #region IPartImportsSatisfiedNotification Implementation
+
+        void IPartImportsSatisfiedNotification.OnImportsSatisfied()
+        {
+            this.Framebuffer.Initialize(256, 240, 64);
         }
 
         #endregion

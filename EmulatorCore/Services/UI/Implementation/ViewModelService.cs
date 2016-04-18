@@ -4,11 +4,8 @@ using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
 
-namespace EmulatorCore.Services.UI
+namespace EmulatorCore.Services.UI.Implementation
 {
     [Export(typeof(IViewModelService))]
     internal class ViewModelService : IViewModelService
@@ -30,8 +27,6 @@ namespace EmulatorCore.Services.UI
 
                 this.Container.SatisfyImportsOnce(view);
                 this.Container.SatisfyImportsOnce(viewModel);
-
-                this.Container.ComposeExportedValue<Components.Graphics.IPaletteFramebuffer>((Components.Graphics.IPaletteFramebuffer)viewModel);
 
                 view.DataContext = viewModel;
                 return view;

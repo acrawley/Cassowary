@@ -45,7 +45,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Components\CPU\IInstruction.cs" />
+    <Compile Include="Components\Graphics\IPalette.cs" />
+    <Compile Include="Components\Graphics\IPaletteEntry.cs" />
     <Compile Include="Components\Graphics\IPaletteFramebuffer.cs" />
+    <Compile Include="Components\Graphics\PaletteEntry.cs" />
     <Compile Include="Components\IEmulator.cs" />
     <Compile Include="Components\IEmulatorComponent.cs" />
     <Compile Include="Components\Memory\IMemoryBus.cs" />
@@ -63,8 +66,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Memory\Memory.cs" />
     <Compile Include="Services\UI\IViewFactory.cs" />
+    <Compile Include="Services\UI\IViewModel.cs" />
     <Compile Include="Services\UI\IViewModelService.cs" />
-    <Compile Include="Services\UI\ViewModelService.cs" />
+    <Compile Include="Services\UI\ViewModelBase.cs" />
+    <Compile Include="Services\UI\Implementation\ViewModelService.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

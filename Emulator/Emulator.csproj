@@ -54,6 +54,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="EmulatorApp.cs" />
+    <Compile Include="Services\Framebuffer\Implementation\FramebufferService.cs" />
+    <Compile Include="Services\Framebuffer\IFramebufferService.cs" />
     <Compile Include="UI\ViewModel\MainWindowViewModel.cs" />
     <Compile Include="UI\View\MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
