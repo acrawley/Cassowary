@@ -396,9 +396,14 @@ namespace NesEmulator.PPU
                     byte tileRow = (byte)(this.scanline >> 3);
                     byte tileCol = (byte)((this.cycle - 1) >> 3);
 
-                    byte quadrant = (byte)((((tileRow & 0x02) == 0x02) ? 0x04 : 0x00) +
-                                           (((tileCol & 0x02) == 0x02) ? 0x02 : 0x00));
-                    byte paletteIndex = (byte)(((this.attributeShiftRegister & (0x03 << quadrant)) >> quadrant) & 0x03);
+                    byte paletteIndex = 0;
+                    if (bgPalette != 0)
+                    {
+                        // Palette entry 0 always comes from the first palette, so only do this for non-zero entries
+                        byte quadrant = (byte)((((tileRow & 0x02) == 0x02) ? 0x04 : 0x00) +
+                                               (((tileCol & 0x02) == 0x02) ? 0x02 : 0x00));
+                        paletteIndex = (byte)(((this.attributeShiftRegister & (0x03 << quadrant)) >> quadrant) & 0x03);
+                    }
 
                     pixelColor = this.paletteMemory[(paletteIndex * 4) + bgPalette];
 
@@ -849,21 +854,33 @@ namespace NesEmulator.PPU
             {
                 address -= 0x3F00;
 
-                // Background color (lowest byte) is the same for all palettes
-                if ((address & 0x03) == 0)
+                // The first entry of the first palette is the "universal" background color used
+                //  for any pixel with a value of 0.  The first entries of the other palettes can
+                //  still be set, but they're normally never seen.  The first entries of the sprite
+                //  palettes mirror the first entry of the corresponding background palette
+                switch (address)
                 {
-                    this.paletteMemory[0x00] = value;
-                    this.paletteMemory[0x04] = value;
-                    this.paletteMemory[0x08] = value;
-                    this.paletteMemory[0x0C] = value;
-                    this.paletteMemory[0x10] = value;
-                    this.paletteMemory[0x14] = value;
-                    this.paletteMemory[0x18] = value;
-                    this.paletteMemory[0x1C] = value;
-                    return;
+                    case 0x10:
+                        this.paletteMemory[0x00] = value;
+                        break;
+
+                    case 0x14:
+                        this.paletteMemory[0x04] = value;
+                        break;
+
+                    case 0x18:
+                        this.paletteMemory[0x08] = value;
+                        break;
+
+                    case 0x1C:
+                        this.paletteMemory[0x0C] = value;
+                        break;
+
+                    default:
+                        this.paletteMemory[address] = value;
+                        break;
                 }
 
-                this.paletteMemory[address] = value;
                 return;
             }
 
