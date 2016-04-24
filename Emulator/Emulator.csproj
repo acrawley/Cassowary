@@ -54,10 +54,27 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="EmulatorApp.cs" />
+    <Compile Include="Services\Configuration\ValidTypeAttribute.cs" />
+    <Compile Include="Services\Configuration\DefaultPropertyAttribute.cs" />
+    <Compile Include="Services\Configuration\IConfigurationSection.cs" />
+    <Compile Include="Services\Configuration\IConfigurationService.cs" />
+    <Compile Include="Services\Configuration\Implementation\ConfigurationRoot.cs" />
+    <Compile Include="Services\Configuration\Implementation\ConfigurationService.cs" />
+    <Compile Include="Services\Configuration\Implementation\Serialization\ConfigurationSerializer.cs" />
+    <Compile Include="Services\Configuration\SerializedNameAttribute.cs" />
     <Compile Include="Services\Framebuffer\Implementation\FramebufferService.cs" />
     <Compile Include="Services\Framebuffer\IFramebufferService.cs" />
-    <Compile Include="Services\Input\IInputService.cs" />
+    <Compile Include="Services\Input\IKeyboardReader.cs" />
+    <Compile Include="Services\Input\Implementation\Configuration\Controller.cs" />
+    <Compile Include="Services\Input\Implementation\Configuration\ControllerElement.cs" />
+    <Compile Include="Services\Input\Implementation\Configuration\ElementMapping.cs" />
+    <Compile Include="Services\Input\Implementation\Configuration\InputConfiguration.cs" />
+    <Compile Include="Services\Input\Implementation\Configuration\KeyboardMapping.cs" />
+    <Compile Include="Services\Input\Implementation\Readers\KeyboardReader.cs" />
+    <Compile Include="Services\Input\Implementation\Configuration\XInputMapping.cs" />
     <Compile Include="Services\Input\Implementation\InputService.cs" />
+    <Compile Include="Services\Input\Implementation\Readers\XInputReader.cs" />
+    <Compile Include="Services\Input\IXInputReader.cs" />
     <Compile Include="UI\Helpers\KeyEventBinding.cs" />
     <Compile Include="UI\Helpers\UICommand.cs" />
     <Compile Include="UI\ViewModel\MainWindowViewModel.cs" />
@@ -81,6 +98,9 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Services\Configuration\Implementation\DefaultConfig.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

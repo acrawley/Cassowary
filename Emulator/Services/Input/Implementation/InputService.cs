@@ -6,79 +6,94 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Emulator.Services.Configuration;
+using Emulator.Services.Input.Implementation.Configuration;
 using EmulatorCore.Components.Input;
 
 namespace Emulator.Services.Input.Implementation
 {
-    [Export(typeof(IInputService))]
     [Export(typeof(IInputReader))]
-    internal class InputService : IInputService, IInputReader
+    [Export(typeof(IConfigurationSection))]
+    internal class InputService : IInputReader, IConfigurationSection
     {
-        #region Private Fields
+        #region MEF Imports
 
-        private List<Key> activeKeys;
-        private Dictionary<string, Key> mappings;
+        [Import(typeof(IKeyboardReader))]
+        private IKeyboardReader KeyboardReader { get; set; }
+
+        [Import(typeof(IXInputReader))]
+        private IXInputReader XInputReader { get; set; }
 
         #endregion
 
-        #region Constructor
+        #region Private Fields
 
-        internal InputService()
+        InputConfiguration inputConfig;
+
+        #endregion
+
+        #region IConfigurationSection Implementation
+
+        Type IConfigurationSection.SectionType
         {
-            this.activeKeys = new List<Key>();
+            get { return typeof(InputConfiguration); }
+        }
 
-            // TODO: Configurable mappings
-            this.mappings = new Dictionary<string, Key>()
-            {
-                { "BTN_A", Key.Z },
-                { "BTN_B", Key.X },
-                { "BTN_SELECT", Key.A },
-                { "BTN_START", Key.S },
-                { "BTN_UP", Key.Up },
-                { "BTN_DOWN", Key.Down },
-                { "BTN_LEFT", Key.Left },
-                { "BTN_RIGHT", Key.Right }
-            };
+        object IConfigurationSection.Section
+        {
+            get { return this.inputConfig; }
+            set { this.inputConfig = (InputConfiguration)value; }
         }
 
         #endregion
+
+        private void UpdateButtonState(IButtonInputElement deviceElement, IEnumerable<ElementMapping> mappings)
+        {
+            bool pressed = false;
+
+            foreach (ElementMapping mapping in mappings)
+            {
+                if (mapping is KeyboardMapping)
+                {
+                    pressed = this.KeyboardReader.GetKeyState(((KeyboardMapping)mapping).Key);
+                }
+                else if (mapping is XInputMapping)
+                {
+                    XInputMapping xInputMapping = (XInputMapping)mapping;
+                    pressed = this.XInputReader.GetButtonState(xInputMapping.Controller, xInputMapping.Element);
+                }
+
+                if (pressed)
+                {
+                    break;
+                }
+            }
+
+            deviceElement.State = pressed;
+        }
 
         #region IInputReader Implementation
 
-        void IInputReader.Poll(int controllerIndex, IEnumerable<IInputElement> elements)
+        void IInputReader.Poll(int controllerIndex, IInputDevice device)
         {
-            if (controllerIndex == 0)
+            Controller controller = this.inputConfig.Controllers
+                .FirstOrDefault(c => c.Index == controllerIndex 
+                                     && c.Connected 
+                                     && String.Equals(c.Type, device.Name, StringComparison.Ordinal));
+
+            if (controller != null)
             {
-                lock(this.activeKeys)
+                foreach (IInputElement deviceElement in device.InputElements)
                 {
-                    foreach (IButtonInputElement element in elements.OfType<IButtonInputElement>())
+                    ControllerElement configElement = controller.Elements.FirstOrDefault(e => String.Equals(e.Id, deviceElement.Id, StringComparison.Ordinal));
+                    if (configElement != null)
                     {
-                        element.State = this.activeKeys.Contains(this.mappings[element.Id]);
+                        if (deviceElement is IButtonInputElement)
+                        {
+                            this.UpdateButtonState((IButtonInputElement)deviceElement, configElement.Mappings);
+                        }
                     }
                 }
-            }
-        }
-
-        #endregion
-
-        #region IInputService Implementation
-
-        void IInputService.SetKeyDown(Key key)
-        {
-            lock (this.activeKeys)
-            {
-                if (!this.activeKeys.Contains(key))
-                {
-                    this.activeKeys.Add(key);
-                }
-            }
-        }
-
-        void IInputService.SetKeyUp(Key key)
-        {
-            lock(this.activeKeys)
-            {
-                this.activeKeys.Remove(key);
             }
         }
 

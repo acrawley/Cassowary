@@ -4,10 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EmulatorCore.Components.Input
+namespace Emulator.Services.Input.Implementation.Configuration
 {
-    public interface IInputReader
+    internal abstract class ElementMapping
     {
-        void Poll(int controllerIndex, IInputDevice device);
     }
 }

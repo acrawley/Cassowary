@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using Emulator.Services.Configuration;
 using Emulator.UI.ViewModel;
 using EmulatorCore.Components;
 using EmulatorCore.Services.UI;
@@ -23,13 +26,18 @@ namespace Emulator
         [ImportMany(typeof(IEmulatorFactory))]
         private IEnumerable<Lazy<IEmulatorFactory, IEmulatorFactoryMetadata>> EmulatorFactories { get; set; }
 
+        [Import(typeof(IConfigurationService))]
+        private IConfigurationService ConfigurationService { get; set; }
+
         #endregion
 
         internal int Run()
         {
             this.application = new Application();
+
             this.application.Startup += OnApplicationStartup;
             this.application.Exit += OnApplicationExit;
+
             return this.application.Run();
         }
 
@@ -38,10 +46,14 @@ namespace Emulator
         private void OnApplicationExit(object sender, ExitEventArgs e)
         {
             this.emulator.Stop();
+            this.ConfigurationService.Save();
         }
 
         private void OnApplicationStartup(object sender, StartupEventArgs e)
         {
+            this.ConfigurationService.ConfigurationFileName = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "config.xml");
+            this.ConfigurationService.Load();
+
             // Load and show the main window
             this.application.MainWindow = this.ViewModelService.CreateViewForViewModel<Window>(new MainWindowViewModel());
             this.application.MainWindow.Show();

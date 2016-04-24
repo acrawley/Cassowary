@@ -26,8 +26,8 @@ namespace Emulator.UI.ViewModel
         [Import(typeof(IFramebufferService))]
         private IFramebufferService FramebufferService { get; set; }
 
-        [Import(typeof(IInputService))]
-        private IInputService InputService { get; set; }
+        [Import(typeof(IKeyboardReader))]
+        private IKeyboardReader KeyboardReader { get; set; }
 
         #endregion
 
@@ -64,13 +64,13 @@ namespace Emulator.UI.ViewModel
         {
             if (!args.IsRepeat)
             {
-                this.InputService.SetKeyDown(args.Key);
+                this.KeyboardReader.NotifyKeyDown(args.Key);
             }
         }
 
         private void OnKeyUp(KeyEventArgs args)
         {
-            this.InputService.SetKeyUp(args.Key);
+            this.KeyboardReader.NotifyKeyUp(args.Key);
         }
 
         #endregion

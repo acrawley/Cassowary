@@ -85,7 +85,7 @@ namespace NesEmulator.Input
                 {
                     if (this.controllers[i] != null)
                     {
-                        this.InputReader.Poll(i, this.controllers[i].InputElements);
+                        this.InputReader.Poll(i, this.controllers[i]);
                         this.controllers[i].Strobe();
                     }
                 }

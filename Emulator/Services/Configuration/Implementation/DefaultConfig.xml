@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Configuration>
+  <Input AllowImpossibleInputs="False">
+    <Controller Index="0" Connected="True" Type="NES Control Pad">
+      <ControllerElement Id="BTN_A">
+        <KeyboardMapping Key="X" />
+        <XInputMapping Controller="0" Element="BTN_A" />
+        <XInputMapping Controller="0" Element="BTN_B" />
+      </ControllerElement>
+      <ControllerElement Id="BTN_B">
+        <KeyboardMapping Key="Z" />
+        <XInputMapping Controller="0" Element="BTN_X" />
+        <XInputMapping Controller="0" Element="BTN_Y" />
+      </ControllerElement>
+      <ControllerElement Id="BTN_SELECT">
+        <KeyboardMapping Key="A" />
+        <XInputMapping Controller="0" Element="BTN_BACK" />
+      </ControllerElement>
+      <ControllerElement Id="BTN_START">
+        <KeyboardMapping Key="S" />
+        <XInputMapping Controller="0" Element="BTN_START" />
+      </ControllerElement>
+      <ControllerElement Id="BTN_UP">
+        <KeyboardMapping Key="Up" />
+        <XInputMapping Controller="0" Element="BTN_DPAD_UP" />
+        <XInputMapping Controller="0" Element="BTN_LSTICK_UP" />
+      </ControllerElement>
+      <ControllerElement Id="BTN_DOWN">
+        <KeyboardMapping Key="Down" />
+        <XInputMapping Controller="0" Element="BTN_DPAD_DOWN" />
+        <XInputMapping Controller="0" Element="BTN_LSTICK_DOWN" />
+      </ControllerElement>
+      <ControllerElement Id="BTN_LEFT">
+        <KeyboardMapping Key="Left" />
+        <XInputMapping Controller="0" Element="BTN_DPAD_LEFT" />
+        <XInputMapping Controller="0" Element="BTN_LSTICK_LEFT" />
+      </ControllerElement>
+      <ControllerElement Id="BTN_RIGHT">
+        <KeyboardMapping Key="Right" />
+        <XInputMapping Controller="0" Element="BTN_DPAD_RIGHT" />
+        <XInputMapping Controller="0" Element="BTN_LSTICK_RIGHT" />
+      </ControllerElement>
+    </Controller>
+  </Input>
+</Configuration>

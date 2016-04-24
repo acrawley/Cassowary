@@ -7,9 +7,11 @@ using System.Windows.Input;
 
 namespace Emulator.Services.Input
 {
-    internal interface IInputService
+    interface IKeyboardReader
     {
-        void SetKeyDown(Key key);
-        void SetKeyUp(Key key);
+        void NotifyKeyDown(Key key);
+        void NotifyKeyUp(Key key);
+
+        bool GetKeyState(Key key);
     }
 }
