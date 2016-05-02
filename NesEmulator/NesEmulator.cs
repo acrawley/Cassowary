@@ -15,6 +15,7 @@ using NesEmulator.Input;
 using System.ComponentModel.Composition.Hosting;
 using System.Threading;
 using EmulatorCore.Components.Core;
+using NesEmulator.APU;
 
 namespace NesEmulator
 {
@@ -34,13 +35,12 @@ namespace NesEmulator
     internal class NesEmulator : EmulatorBase, IEmulator
     {
         private NesRomLoader loader;
-        private IProcessorCore cpu;
+        private Ricoh2A03 cpu;
         private IMemoryBus cpuBus;
         private IMemoryBus ppuBus;
         private Memory cpuRam;
         private Memory ppuRam;
         private Ricoh2C02 ppu;
-        private InputManager inputManager;
 
         private bool run;
 
@@ -54,7 +54,6 @@ namespace NesEmulator
             this.cpuRam = new Memory("CPU RAM", this.cpuBus, 0x0000, 0x800);
             this.ppuRam = new Memory("PPU RAM", this.ppuBus, 0x2000, 0x1000);
             this.cpu = new Ricoh2A03(this.cpuBus);
-            this.inputManager = new InputManager(this.cpuBus);
 
             this.ppu = new Ricoh2C02(this.cpu, this.cpuBus, this.ppuBus);
 
@@ -76,7 +75,7 @@ namespace NesEmulator
         void IEmulator.LoadFile(string fileName)
         {
             loader.LoadRom(fileName);
-            this.cpu.Reset();
+            ((IProcessorCore)this.cpu).Reset();
         }
 
         AutoResetEvent stopEvent = new AutoResetEvent(false);
@@ -91,9 +90,11 @@ namespace NesEmulator
 
             this.run = true;
 
+            IProcessorCore core = (IProcessorCore)this.cpu;
+
             while (this.run)
             {
-                cycles = this.cpu.Step();
+                cycles = core.Step();
                 if (cycles < 0)
                 {
                     break;
@@ -102,6 +103,11 @@ namespace NesEmulator
                 for (int i = 0; i < cycles; i++)
                 {
                     this.ppu.Step();
+                }
+
+                for (int i = 0; i < cycles; i++)
+                {
+                    this.cpu.APU.Tick();
                 }
 
                 cycleCount += cycles;
@@ -134,7 +140,8 @@ namespace NesEmulator
                     this.cpu,
                     this.ppu,
                     this.cpuRam,
-                    this.inputManager,
+                    this.cpu.InputManager,
+                    this.cpu.APU,
                 };
             }
         }

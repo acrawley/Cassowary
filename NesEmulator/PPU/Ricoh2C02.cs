@@ -83,7 +83,7 @@ namespace NesEmulator.PPU
             this.scanline = -1;
             this.cycle = 0;
 
-            this.vbiTimer.Start();
+            //this.vbiTimer.Start();
         }
 
         #endregion
@@ -400,10 +400,18 @@ namespace NesEmulator.PPU
                     byte paletteIndex = 0;
                     if (bgPalette != 0)
                     {
-                        // Palette entry 0 always comes from the first palette, so only do this for non-zero entries
+                        // Palette entry 0 always comes from the first palette, so only calculate the target palette
+                        //  for non-zero pixels.
+
+                        // Attribute table masking:
+                        //   Row & 0x01  Col & 0x01  Mask
+                        //   0           0           00000011
+                        //   0           1           00001100
+                        //   1           0           00110000
+                        //   1           1           11000000
                         byte quadrant = (byte)((((tileRow & 0x02) == 0x02) ? 0x04 : 0x00) +
                                                (((tileCol & 0x02) == 0x02) ? 0x02 : 0x00));
-                        paletteIndex = (byte)(((this.attributeShiftRegister & (0x03 << quadrant)) >> quadrant) & 0x03);
+                        paletteIndex = (byte)((this.attributeShiftRegister >> quadrant) & 0x03);
                     }
 
                     pixelColor = this.paletteMemory[(paletteIndex * 4) + bgPalette];
@@ -671,7 +679,7 @@ namespace NesEmulator.PPU
             this.tileBitmapHiShiftRegister <<= 1;
 
             // 8 cycles required to read a complete set of tile data
-            int step = (cycle - 1) & 0x07;
+            int step = (this.cycle - 1) & 0x07;
 
             switch (step)
             {

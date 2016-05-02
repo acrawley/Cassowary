@@ -44,6 +44,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Components\Audio\IAudioRenderer.cs" />
     <Compile Include="Components\CPU\IInstruction.cs" />
     <Compile Include="Components\Graphics\IPalette.cs" />
     <Compile Include="Components\Graphics\IPaletteEntry.cs" />

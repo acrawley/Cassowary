@@ -41,6 +41,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="APU\NesApu.cs" />
+    <Compile Include="APU\PulseChannel.cs" />
+    <Compile Include="APU\TriangleChannel.cs" />
     <Compile Include="CPU\InstructionData.cs" />
     <Compile Include="CPU\InterruptWrapper.cs" />
     <Compile Include="CPU\RegisterWrapper.cs" />

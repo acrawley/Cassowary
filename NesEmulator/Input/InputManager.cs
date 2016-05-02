@@ -39,9 +39,8 @@ namespace NesEmulator.Input
 
         #region Constructor
 
-        public InputManager(IMemoryBus cpuBus)
+        public InputManager()
         {
-            cpuBus.RegisterMappedDevice(this, InputManager.JOY1_ADDR, InputManager.JOY2_ADDR);
             this.controllers = new INesInputDevice[4] {
                 new NesControlPad(),
                 new NesControlPad(),

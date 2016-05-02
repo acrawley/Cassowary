@@ -54,6 +54,19 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="EmulatorApp.cs" />
+    <Compile Include="Services\Audio\IAudioService.cs" />
+    <Compile Include="Services\Audio\Implementation\AudioService.cs" />
+    <Compile Include="Services\Audio\Implementation\Interop\Interop.cs" />
+    <Compile Include="Services\Audio\Implementation\Interop\IAudioClient.cs" />
+    <Compile Include="Services\Audio\Implementation\Interop\IAudioRenderClient.cs" />
+    <Compile Include="Services\Audio\Implementation\Interop\IMMDevice.cs" />
+    <Compile Include="Services\Audio\Implementation\Interop\IMMDeviceCollection.cs" />
+    <Compile Include="Services\Audio\Implementation\Interop\IMMDeviceEnumerator.cs" />
+    <Compile Include="Services\Audio\Implementation\Interop\IMMNotificationClient.cs" />
+    <Compile Include="Services\Audio\Implementation\Interop\IPropertyStore.cs" />
+    <Compile Include="Services\Audio\Implementation\Interop\MMDeviceEnumerator.cs" />
+    <Compile Include="Services\Audio\Implementation\Interop\PROPVARIANT.cs" />
+    <Compile Include="Services\Audio\Implementation\BufferQueue.cs" />
     <Compile Include="Services\Configuration\ValidTypeAttribute.cs" />
     <Compile Include="Services\Configuration\DefaultPropertyAttribute.cs" />
     <Compile Include="Services\Configuration\IConfigurationSection.cs" />
@@ -102,6 +115,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Services\Configuration\Implementation\DefaultConfig.xml" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>mkdir $(SolutionDir)\bin\

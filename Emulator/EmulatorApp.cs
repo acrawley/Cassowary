@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using Emulator.Services.Audio;
 using Emulator.Services.Configuration;
 using Emulator.UI.ViewModel;
 using EmulatorCore.Components;
@@ -29,6 +30,9 @@ namespace Emulator
         [Import(typeof(IConfigurationService))]
         private IConfigurationService ConfigurationService { get; set; }
 
+        [Import(typeof(IAudioService))]
+        private IAudioService AudioService { get; set; }
+
         #endregion
 
         internal int Run()
@@ -47,12 +51,16 @@ namespace Emulator
         {
             this.emulator.Stop();
             this.ConfigurationService.Save();
+            this.AudioService.Stop();
         }
 
         private void OnApplicationStartup(object sender, StartupEventArgs e)
         {
+            // Load configuration
             this.ConfigurationService.ConfigurationFileName = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "config.xml");
             this.ConfigurationService.Load();
+
+            this.AudioService.Start();
 
             // Load and show the main window
             this.application.MainWindow = this.ViewModelService.CreateViewForViewModel<Window>(new MainWindowViewModel());
@@ -74,6 +82,8 @@ namespace Emulator
             //emulator.LoadFile(@"Z:\public\ROMs\NES\World\Duck Hunt (W) [!].nes");
             //emulator.LoadFile(@"Z:\public\ROMs\NES\tests\spritecans-2011\spritecans.nes");
             //emulator.LoadFile(@"Z:\public\ROMs\NES\USA\Balloon Fight (U) [!].nes.!ut");
+
+            //emulator.LoadFile(@"D:\Emulators\NES\roms\demos\Stars_Biology.nes");
 
             //emulator.LoadFile(@"z:\public\ROMs\NES\tests\nestest.nes");
             emulator.Run();

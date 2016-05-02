@@ -8,6 +8,8 @@ using System.Text;
 using EmulatorCore.Components.CPU;
 using EmulatorCore.Components.Memory;
 using EmulatorCore.Extensions;
+using NesEmulator.APU;
+using NesEmulator.Input;
 
 namespace NesEmulator.CPU
 {
@@ -82,13 +84,25 @@ namespace NesEmulator.CPU
 
         #endregion
 
+        #region Public Properties
+
+        public InputManager InputManager { get; private set; }
+        public NesApu APU { get; private set; }
+
+        #endregion
+
         #region Constructor
 
         internal Ricoh2A03(IMemoryBus cpuBus)
         {
             this.cpuBus = cpuBus;
 
-            this.cpuBus.RegisterMappedDevice(this, Ricoh2A03.OAMDMA_ADDR);
+            // CPU has several internally mapped memory ports for the APU, controllers, and OAM DMA
+            this.cpuBus.RegisterMappedDevice(this, 0x4000, 0x4017);
+
+            // These are implemented in separate classes, but are technically part of the CPU
+            this.InputManager = new InputManager();
+            this.APU = new NesApu();
 
             // Initial register values
             this.P = 0x34;
@@ -1574,6 +1588,27 @@ namespace NesEmulator.CPU
 
         byte IMemoryMappedDevice.Read(int address)
         {
+            if (address == Ricoh2A03.OAMDMA_ADDR)
+            {
+                return 0;
+            }
+            else if (address >= 0x4000 && address <= 0x4015)
+            {
+                // APU
+                return ((IMemoryMappedDevice)this.APU).Read(address);
+            }
+            else if (address == 0x4016)
+            {
+                // Input
+                return ((IMemoryMappedDevice)this.InputManager).Read(address);
+            }
+            else if (address == 0x4017)
+            {
+                // Input / APU
+                return (byte)(((IMemoryMappedDevice)this.InputManager).Read(address) |
+                              ((IMemoryMappedDevice)this.APU).Read(address));
+            }
+
             return 0;
         }
 
@@ -1585,6 +1620,22 @@ namespace NesEmulator.CPU
                 this.oamDmaActive = true;
                 this.oamDmaCycle = 0;
                 this.oamDmaBaseAddress = (UInt16)(value * 0x100);
+            }
+            else if (address >= 0x4000 && address <= 0x4015)
+            {
+                // APU
+                ((IMemoryMappedDevice)this.APU).Write(address, value);
+            }
+            else if (address == 0x4016)
+            {
+                // Input
+                ((IMemoryMappedDevice)this.InputManager).Write(address, value);
+            }
+            else if (address == 0x4017)
+            {
+                // Input / APU
+                ((IMemoryMappedDevice)this.InputManager).Write(address, value);
+                ((IMemoryMappedDevice)this.APU).Write(address, value);
             }
         }
 

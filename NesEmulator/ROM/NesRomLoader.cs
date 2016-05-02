@@ -67,8 +67,11 @@ namespace NesEmulator.ROM
             // Load initial ROM data
             this.reader.GetPrgRomBank(this.prgRom, 0, 0);
             this.reader.GetPrgRomBank(this.prgRom, this.reader.PrgRomBanks > 1 ? 1 : 0, 0x4000);
-            
-            this.reader.GetChrRomBank(this.chrRom, 0, 0);
+
+            if (this.reader.ChrRomBanks > 0)
+            {
+                this.reader.GetChrRomBank(this.chrRom, 0, 0);
+            }
 
             if (this.reader.Mirroring == MirroringMode.Horizontal)
             {
@@ -163,6 +166,10 @@ namespace NesEmulator.ROM
         void IMemoryMappedDevice.Write(int address, byte value)
         {
             // TODO: Mappers
+            if (address >= 0x0000 && address <= 0x1FFF && this.reader.ChrRomBanks == 0)
+            {
+                this.chrRom[address] = value;
+            }
         }
 
         #endregion
