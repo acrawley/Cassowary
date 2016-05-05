@@ -576,7 +576,10 @@ namespace NesEmulator.PPU
                             //  from primary OAM
                             if (this.scanline >= this.spriteEvalTemp && this.scanline < (this.spriteEvalTemp + 8))
                             {
-                                this.spriteZeroPresent = this.cycle == 66;
+                                if (!this.spriteZeroPresent)
+                                {
+                                    this.spriteZeroPresent = this.cycle == 66;
+                                }
 
                                 currentState = SpriteEvaluationState.CopyTileIndex;
                                 this.oamAddr++;
