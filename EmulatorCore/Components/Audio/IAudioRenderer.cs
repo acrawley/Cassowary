@@ -13,8 +13,8 @@ namespace EmulatorCore.Components.Audio
         int SampleRate { get; }
         int BitsPerSample { get; }
         int Channels { get; }
-
         bool IsFloatFormat { get; }
+        event EventHandler FormatChanged;
 
         void EnqueueBuffer(byte[] sampleData);
     }

@@ -19,7 +19,7 @@ namespace Emulator.Services.Audio.Implementation
         #region Private Fields
 
         private AutoResetEvent bufferReadyEvent;
-        private AutoResetEvent shutdownEvent;
+        private ManualResetEvent shutdownEvent;
 
         private IAudioRenderClient audioRenderClient;
         private IAudioClient audioClient;
@@ -38,10 +38,12 @@ namespace Emulator.Services.Audio.Implementation
         internal AudioService()
         {
             this.bufferReadyEvent = new AutoResetEvent(false);
-            this.shutdownEvent = new AutoResetEvent(false);
+            this.shutdownEvent = new ManualResetEvent(false);
         }
 
         #endregion
+
+        #region IAudioRenderer Implementation
 
         public int SampleRate { get; private set; }
 
@@ -50,6 +52,8 @@ namespace Emulator.Services.Audio.Implementation
         public int Channels { get; private set; }
 
         public bool IsFloatFormat { get; private set; }
+
+        public event EventHandler FormatChanged;
 
         public void EnqueueBuffer(byte[] sampleData)
         {
@@ -60,6 +64,11 @@ namespace Emulator.Services.Audio.Implementation
         {
             this.bufferQueue = new BufferQueue(bufferCount);
 
+            this.InitializeAudioDevice();
+        }
+
+        private void InitializeAudioDevice()
+        {
             // Get default audio device
             MMDeviceEnumerator deviceEnumeratorClass = new MMDeviceEnumerator();
             IMMDeviceEnumerator deviceEnumerator = (IMMDeviceEnumerator)deviceEnumeratorClass;
@@ -142,6 +151,11 @@ namespace Emulator.Services.Audio.Implementation
                     Debug.Fail("Unknown value for WAVEFORMATEX.wFormatTag!");
                     break;
             }
+
+            if (this.FormatChanged != null)
+            {
+                this.FormatChanged(this, EventArgs.Empty);
+            }
         }
 
         private void RenderThreadProc()
@@ -165,7 +179,7 @@ namespace Emulator.Services.Audio.Implementation
                 if (sampleData == null)
                 {
                     // Wait for sample was cancelled
-                    continue;
+                    break;
                 }
 
                 // Determine amount of data necessary to fill WASAPI buffer
@@ -197,6 +211,10 @@ namespace Emulator.Services.Audio.Implementation
             }
         }
 
+        #endregion
+
+        #region IAudioService Implementation
+
         void IAudioService.Start()
         {
             this.renderThread = new Thread(this.RenderThreadProc);
@@ -211,5 +229,7 @@ namespace Emulator.Services.Audio.Implementation
             this.shutdownEvent.Set();
             this.bufferQueue.CancelWait();
         }
+
+        #endregion
     }
 }

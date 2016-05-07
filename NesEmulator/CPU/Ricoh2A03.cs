@@ -100,10 +100,6 @@ namespace NesEmulator.CPU
             // CPU has several internally mapped memory ports for the APU, controllers, and OAM DMA
             this.cpuBus.RegisterMappedDevice(this, 0x4000, 0x4017);
 
-            // These are implemented in separate classes, but are technically part of the CPU
-            this.InputManager = new InputManager();
-            this.APU = new NesApu();
-
             // Initial register values
             this.P = 0x34;
             this.A = 0;
@@ -129,6 +125,10 @@ namespace NesEmulator.CPU
                     new InterruptWrapper("IRQ", 2, isAsserted => this.irqAsserted += isAsserted ? 1 : -1)
                 }
             );
+
+            // These are implemented in separate classes, but are technically part of the CPU
+            this.InputManager = new InputManager();
+            this.APU = new NesApu(this.cpuBus, this);
 
             this.InitializeOpTable();
         }
