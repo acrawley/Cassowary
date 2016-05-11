@@ -23,6 +23,13 @@ namespace NesEmulator.PPU
         public const int PPUADDR_REGISTER = 0x2006;
         public const int PPUDATA_REGISTER = 0x2007;
 
+        private const UInt16 COARSE_X_MASK = 0x001F;
+        private const UInt16 COARSE_Y_MASK = 0x03E0;
+        private const UInt16 NAMETABLE_MASK = 0x0C00;
+        private const UInt16 FINE_Y_MASK = 0x7000;
+        private const UInt16 HORIZONTAL_MASK = 0x041F;
+        private const UInt16 VERTICAL_MASK = 0x7BE0;
+
         private static long StopwatchTicksPerFrame = Stopwatch.Frequency / 60;
 
         #endregion
@@ -101,7 +108,6 @@ namespace NesEmulator.PPU
 
         private byte PPULATCH;
 
-        private int baseNametableAddr;
         private int ppuDataIncrement;
         private int spritePatternTableAddr;
         private int backgroundPatternTableAddr;
@@ -111,13 +117,8 @@ namespace NesEmulator.PPU
 
         private void SetPpuCtrl(byte value)
         {
-            switch (value & 0x03)
-            {
-                case 0x00: this.baseNametableAddr = 0x2000; break;
-                case 0x01: this.baseNametableAddr = 0x2400; break;
-                case 0x02: this.baseNametableAddr = 0x2800; break;
-                case 0x03: this.baseNametableAddr = 0x2C00; break;
-            }
+            // t: ... BA ..... ..... = d: ......BA
+            this.vramAddrTemp = (UInt16)((this.vramAddrTemp & 0x73FF) | ((value & 0x03) << 10));
 
             this.ppuDataIncrement = ((value & 0x04) == 0x04) ? 32 : 1;
             this.spritePatternTableAddr = ((value & 0x08) == 0x08) ? 0x1000 : 0x0000;
@@ -156,9 +157,8 @@ namespace NesEmulator.PPU
         {
             get
             {
-                // Reset latches
-                this.ppuScrollState = PPUSCROLL_State.HorizontalOffset;
-                this.ppuAddrState = PPUADDR_State.HiByte;
+                // Reset latch
+                this.firstWrite = true;
 
                 byte value = (byte)((this.PPULATCH & 0x1F) |
                                     (this.spriteOverflow ? 0x20 : 0x00) |
@@ -209,55 +209,50 @@ namespace NesEmulator.PPU
             }
         }
 
-        private enum PPUSCROLL_State
-        {
-            HorizontalOffset,
-            VerticalOffset,
-        }
-
-        private byte horizontalScrollOffset;
-        private byte verticalScrollOffset;
-        private PPUSCROLL_State ppuScrollState;
+        private bool firstWrite;
+        private UInt16 vramAddr;
+        private UInt16 vramAddrTemp;
+        private byte fineXScroll;
 
         private void SetPpuScroll(byte value)
         {
-            switch (this.ppuScrollState)
+            if (firstWrite)
             {
-                case PPUSCROLL_State.HorizontalOffset:
-                    this.horizontalScrollOffset = value;
-                    this.ppuScrollState = PPUSCROLL_State.VerticalOffset;
-                    break;
-
-                case PPUSCROLL_State.VerticalOffset:
-                    this.verticalScrollOffset = value;
-                    this.ppuScrollState = PPUSCROLL_State.HorizontalOffset;
-                    break;
+                // Update Fine X and Coarse X scroll data
+                // x:                CBA = d: .....CBA
+                // t: ... .. ..... HGFED = d: HGFED...
+                this.fineXScroll = (byte)(value & 0x07);
+                this.vramAddrTemp = (UInt16)((this.vramAddrTemp & 0x7FE0) | ((value & 0xF8) >> 3));
             }
-        }
+            else
+            {
+                // Update Fine Y and Coarse Y scroll data
+                // t: CBA .. HGFED ..... = d: HGFEDCBA
+                this.vramAddrTemp = (UInt16)(((value & 0x07) << 12) | ((value & 0xF8) << 2) | (this.vramAddrTemp & 0x0C1F));
+            }
 
-        private enum PPUADDR_State
-        {
-            HiByte,
-            LoByte,
+            this.firstWrite = !this.firstWrite;
         }
-
-        private UInt16 ppuAddr;
-        private PPUADDR_State ppuAddrState;
 
         private void SetPpuAddr(byte value)
         {
-            switch (this.ppuAddrState)
+            if (firstWrite)
             {
-                case PPUADDR_State.HiByte:
-                    this.ppuAddr = (UInt16)(value << 8);
-                    this.ppuAddrState = PPUADDR_State.LoByte;
-                    break;
-
-                case PPUADDR_State.LoByte:
-                    this.ppuAddr |= value;
-                    this.ppuAddrState = PPUADDR_State.HiByte;
-                    break;
+                // Load upper 8 bits of VRAM addr
+                // t: .FE DC BA... ..... = d: ..FEDCBA
+                // t: X.. .. ..... ..... = 0
+                this.vramAddrTemp = (UInt16)(((value & 0x3F) << 8) | (this.vramAddrTemp & 0x00FF));
             }
+            else
+            {
+                // Load lower 8 bits of VRAM addr
+                // t: ... .. ..HGF EDCBA = d: HGFEDCBA
+                // v                     = t
+                this.vramAddrTemp = (UInt16)((this.vramAddrTemp & 0x7F00) | value);
+                this.vramAddr = this.vramAddrTemp;
+            }
+
+            this.firstWrite = !this.firstWrite;
         }
 
         private byte ppuDataBuffer = 0;
@@ -266,20 +261,20 @@ namespace NesEmulator.PPU
         {
             get
             {
-                byte readVal = this.ppuBus.Read(this.ppuAddr);
+                byte readVal = this.ppuBus.Read(this.vramAddr);
 
                 // Reading data from 0x0000 - 0x3EFF returns the value of an internal buffer, then loads the requested
                 //  address into the buffer, where it will be returned on the next read.  Reads between 0x3F00 and 0x3FFF
                 //  return the value immediately.
-                byte value = (((this.ppuAddr % 0x4000) & 0xFF00) == 0x3F00) ? readVal : this.ppuDataBuffer;
+                byte value = (((this.vramAddr % 0x4000) & 0xFF00) == 0x3F00) ? readVal : this.ppuDataBuffer;
                 this.ppuDataBuffer = readVal;
-                this.ppuAddr += (UInt16)this.ppuDataIncrement;
+                this.vramAddr += (UInt16)this.ppuDataIncrement;
                 return value;
             }
             set
             {
-                this.ppuBus.Write(this.ppuAddr, value);
-                this.ppuAddr += (UInt16)this.ppuDataIncrement;
+                this.ppuBus.Write(this.vramAddr, value);
+                this.vramAddr += (UInt16)this.ppuDataIncrement;
             }
         }
 
@@ -344,30 +339,51 @@ namespace NesEmulator.PPU
                     }
                 }
             }
-            else if (this.cycle == 1)
+            else if (cycle <= 256)
             {
-                // Reset per-frame flags on scanline -1, cycle 1
-                this.isVBlank = false;
-                this.spriteZeroHit = false;
-                this.spriteOverflow = false;
-
-                this.oddFrame = !this.oddFrame;
-
-                if (this.vbiAssertion != null)
+                if (this.cycle == 1)
                 {
-                    this.vbiAssertion.Dispose();
-                    this.vbiAssertion = null;
+                    // Reset per-frame flags on scanline -1, cycle 1
+                    this.isVBlank = false;
+                    this.spriteZeroHit = false;
+                    this.spriteOverflow = false;
+
+                    this.oddFrame = !this.oddFrame;
+
+                    if (this.vbiAssertion != null)
+                    {
+                        this.vbiAssertion.Dispose();
+                        this.vbiAssertion = null;
+                    }
                 }
+
+                if (this.showBackground)
+                {
+                    this.FetchTileData();
+                }
+            }
+            else if (cycle == 257 && this.showBackground)
+            {
+                // Copy horizontal scroll data from temp register to VRAM addr
+                // v: ... .F ..... EDCBA = t: ... .F ..... EDCBA
+                this.vramAddr = (UInt16)((this.vramAddrTemp & HORIZONTAL_MASK) | (this.vramAddr & VERTICAL_MASK));
+            }
+            else if (this.cycle >= 280 && this.cycle <= 304 && this.showBackground)
+            {
+                // Copy vertical scroll data from temp register to VRAM addr
+                // v: IHG F. EDCBA ..... = t: IHG F. EDCBA .....
+                this.vramAddr = (UInt16)((this.vramAddrTemp & VERTICAL_MASK) | (this.vramAddr & HORIZONTAL_MASK));
+
             }
             else if (this.cycle >= 321 && this.cycle <= 336 && this.showBackground)
             {
                 if (this.cycle <= 328)
                 {
-                    this.FetchTileData(0, 0, 0);
+                    this.FetchTileData();
                 }
                 else
                 {
-                    this.FetchTileData(0, 1, 0);
+                    this.FetchTileData();
                 }
             }
             else if (this.cycle == 339 && this.oddFrame)
@@ -383,7 +399,7 @@ namespace NesEmulator.PPU
             {
                 // Idle
             }
-            else if (cycle >= 1 && cycle <= 256)
+            else if (cycle <= 256)
             {
                 int pixelColor = 0;
                 int bgPalette = 0;
@@ -391,32 +407,21 @@ namespace NesEmulator.PPU
                 if (this.showBackground)
                 {
                     // Use data from shift registers to calculate pixel color
-                    bgPalette = (((this.tileBitmapLoShiftRegister & 0x8000) == 0x8000) ? 0x01 : 0x00) +
-                                (((this.tileBitmapHiShiftRegister & 0x8000) == 0x8000) ? 0x02 : 0x00);
+                    bgPalette = (((this.tileBitmapLoShiftRegister & (0x8000 >> this.fineXScroll)) != 0) ? 0x01 : 0x00) +
+                                (((this.tileBitmapHiShiftRegister & (0x8000 >> this.fineXScroll)) != 0) ? 0x02 : 0x00);
 
-                    byte tileRow = (byte)(this.scanline >> 3);
-                    byte tileCol = (byte)((this.cycle - 1) >> 3);
-
-                    byte paletteIndex = 0;
+                    int paletteIndex = 0;
                     if (bgPalette != 0)
                     {
                         // Palette entry 0 always comes from the first palette, so only calculate the target palette
                         //  for non-zero pixels.
-
-                        // Attribute table masking:
-                        //   Row & 0x01  Col & 0x01  Mask
-                        //   0           0           00000011
-                        //   0           1           00001100
-                        //   1           0           00110000
-                        //   1           1           11000000
-                        byte quadrant = (byte)((((tileRow & 0x02) == 0x02) ? 0x04 : 0x00) +
-                                               (((tileCol & 0x02) == 0x02) ? 0x02 : 0x00));
-                        paletteIndex = (byte)((this.attributeShiftRegister >> quadrant) & 0x03);
+                        paletteIndex = (((this.attributeLoShiftRegister & (0x80 >> this.fineXScroll)) != 0) ? 0x01 : 0x00) +
+                                       (((this.attributeHiShiftRegister & (0x80 >> this.fineXScroll)) != 0) ? 0x02 : 0x00);
                     }
 
                     pixelColor = this.paletteMemory[(paletteIndex * 4) + bgPalette];
 
-                    this.FetchTileData(tileRow, tileCol + 2, this.scanline & 0x07);
+                    this.FetchTileData();
                 }
 
                 if (this.showSprites)
@@ -442,7 +447,7 @@ namespace NesEmulator.PPU
                                     {
                                         pixelColor = this.paletteMemory[((this.spriteAttributeLatch[i] & 0x03) * 4) + 16 + spritePalette];
 
-                                        if (i == 0 && this.spriteZeroPresent)
+                                        if (i == 0 && this.spriteZeroOnCurrentScanline)
                                         {
                                             this.spriteZeroHit = true;
                                         }
@@ -462,6 +467,12 @@ namespace NesEmulator.PPU
 
                 this.Framebuffer.SetPixel(this.cycle - 1, this.scanline, pixelColor);
             }
+            else if (cycle == 257 && this.showBackground)
+            {
+                // Copy horizontal scroll data from temp register to VRAM addr
+                // v: ... .F ..... EDCBA = t: ... .F ..... EDCBA
+                this.vramAddr = (UInt16)((this.vramAddrTemp & HORIZONTAL_MASK) | (this.vramAddr & VERTICAL_MASK));
+            }
             else if (cycle <= 320 && this.showSprites)
             {
                 // Pre-fetch sprite tiles for next scanline
@@ -473,11 +484,11 @@ namespace NesEmulator.PPU
                 // Pre-fetch first two background tiles for next scanline
                 if (cycle <= 328)
                 {
-                    this.FetchTileData((this.scanline + 1) >> 3, 0, (this.scanline + 1) & 0x07);
+                    this.FetchTileData();
                 }
                 else
                 {
-                    this.FetchTileData((this.scanline + 1) >> 3, 1, (this.scanline + 1) & 0x07);
+                    this.FetchTileData();
                 }
             }
 
@@ -521,9 +532,10 @@ namespace NesEmulator.PPU
 
         private SpriteEvaluationState currentState;
         private int spritesFound;
-        bool spriteZeroPresent;
+        bool spriteZeroOnNextScanline;
+        bool spriteZeroOnCurrentScanline;
         private byte spriteEvalTemp;
-        bool overrideOamRead;        
+        bool overrideOamRead;
 
         private enum SpriteEvaluationState
         {
@@ -541,7 +553,8 @@ namespace NesEmulator.PPU
             {
                 this.currentState = SpriteEvaluationState.EvaluateYCoord;
                 this.spritesFound = 0;
-                this.spriteZeroPresent = false;
+                this.spriteZeroOnCurrentScanline = this.spriteZeroOnNextScanline;
+                this.spriteZeroOnNextScanline = false;
             }
             else if (this.cycle <= 64)
             {
@@ -576,9 +589,9 @@ namespace NesEmulator.PPU
                             //  from primary OAM
                             if (this.scanline >= this.spriteEvalTemp && this.scanline < (this.spriteEvalTemp + 8))
                             {
-                                if (!this.spriteZeroPresent)
+                                if (!this.spriteZeroOnNextScanline)
                                 {
-                                    this.spriteZeroPresent = this.cycle == 66;
+                                    this.spriteZeroOnNextScanline = this.cycle == 66;
                                 }
 
                                 currentState = SpriteEvaluationState.CopyTileIndex;
@@ -674,55 +687,110 @@ namespace NesEmulator.PPU
 
         private UInt16 tileBitmapLoShiftRegister;
         private UInt16 tileBitmapHiShiftRegister;
-        private UInt16 attributeShiftRegister;
 
-        private void FetchTileData(int row, int col, int tileRow)
+        private byte attributeLoShiftRegister;
+        private byte attributeHiShiftRegister;
+        private byte nextAttributeLoValue;
+        private byte nextAttributeHiValue;
+
+        private void FetchTileData(/*int row, int col, int tileRow*/)
         {
+            // Shift bitmap data registeres
             this.tileBitmapLoShiftRegister <<= 1;
             this.tileBitmapHiShiftRegister <<= 1;
 
-            // 8 cycles required to read a complete set of tile data
+            // Shift attribute data registers - bits are the same for all pixels in a tile, so
+            //  two single-bit values serve as virtual bits 9-16 of the register.
+            this.attributeLoShiftRegister <<= 1;
+            this.attributeHiShiftRegister <<= 1;
+            this.attributeLoShiftRegister |= this.nextAttributeLoValue;
+            this.attributeHiShiftRegister |= this.nextAttributeHiValue;
+
+            // 8 cycles required to read a complete set of tile data, since PPU reads take 2 cycles
             int step = (this.cycle - 1) & 0x07;
 
             switch (step)
             {
-                case 0:
-                    // Cycle 0: Put address of nametable data on the bus
-                    this.ppuAddr = (UInt16)(this.baseNametableAddr + (row * 32) + col);
-                    break;
                 case 1:
-                    // Cycle 1: Read nametable data
-                    this.nametableLatch = this.ppuBus.Read(this.ppuAddr);
-                    break;
-                case 2:
-                    // Cycle 2: Put address of attribute table data on the bus
-                    this.ppuAddr = (UInt16)(this.baseNametableAddr + 0x3C0 + ((row >> 2) * 8) + (col >> 2));
+                    // Cycle 0 / 1: Read nametable data
+                    this.nametableLatch = this.ppuBus.Read(0x2000 | (this.vramAddr & (NAMETABLE_MASK | COARSE_Y_MASK | COARSE_X_MASK)));
                     break;
                 case 3:
-                    // Cycle 3: Read attribute data
-                    this.attributeTableLatch = this.ppuBus.Read(this.ppuAddr);
-                    break;
-                case 4:
-                    // Cycle 4: Put address of low byte of tile bitmap on the bus
-                    this.ppuAddr = (UInt16)(this.backgroundPatternTableAddr + (this.nametableLatch * 16 + tileRow));
+                    // Cycle 2 / 3: Read attribute data
+                    this.attributeTableLatch = this.ppuBus.Read(0x23C0 | (this.vramAddr & NAMETABLE_MASK) | ((this.vramAddr >> 4) & 0x38) | ((this.vramAddr >> 2) & 0x07));
                     break;
                 case 5:
-                    // Cycle 5: Read low byte of tile bitmap
-                    this.tileBitmapLoLatch = this.ppuBus.Read(this.ppuAddr);
-                    break;
-                case 6:
-                    // Cycle 6: Put address of high byte of tile bitmap on the bus
-                    this.ppuAddr = (UInt16)(this.backgroundPatternTableAddr + (this.nametableLatch * 16) + 8 + tileRow);
+                    // Cycle 4 / 5: Read low byte of tile bitmap
+                    this.tileBitmapLoLatch = this.ppuBus.Read(this.backgroundPatternTableAddr + (this.nametableLatch * 16 + ((this.vramAddr & FINE_Y_MASK) >> 12)));
                     break;
                 case 7:
-                    // Cycle 7: Read high byte of tile bitmap and shift into the registers
-                    this.tileBitmapHiLatch = this.ppuBus.Read(this.ppuAddr);
+                    // Cycle 6 / 7: Read high byte of tile bitmap and shift into the registers
+                    this.tileBitmapHiLatch = this.ppuBus.Read(this.backgroundPatternTableAddr + (this.nametableLatch * 16) + 8 + ((this.vramAddr & FINE_Y_MASK) >> 12));
 
+                    // Shift bitmap data for next tile into registers
                     this.tileBitmapHiShiftRegister |= this.tileBitmapHiLatch;
                     this.tileBitmapLoShiftRegister |= this.tileBitmapLoLatch;
 
-                    this.attributeShiftRegister >>= 8;
-                    this.attributeShiftRegister |= (UInt16)(this.attributeTableLatch << 8);
+                    // Set attribute bits for next tile
+                    // Attribute table bits are selected via a 4-to-1 mux driven by bits 2 and 7 of the VRAM address
+                    //   v & 0x40    v & 0x02    Mask
+                    //   0           0           00000011
+                    //   0           1           00001100
+                    //   1           0           00110000
+                    //   1           1           11000000
+                    byte quadrant = (byte)((((this.vramAddr & 0x40) == 0x40) ? 0x04 : 0x00) +
+                                           (((this.vramAddr & 0x02) == 0x02) ? 0x02 : 0x00));
+                    byte paletteIndex = (byte)((this.attributeTableLatch >> quadrant) & 0x03);
+
+                    this.nextAttributeLoValue = (byte)(paletteIndex & 0x01);
+                    this.nextAttributeHiValue = (byte)((paletteIndex & 0x02) >> 1);
+
+                    // Increment coarse X for next tile
+                    if ((this.vramAddr & COARSE_X_MASK) != COARSE_X_MASK)
+                    {
+                        this.vramAddr++;
+                    }
+                    else
+                    {
+                        // Overflow - reset coarse X to 0 and flip to next nametable
+                        this.vramAddr &= (FINE_Y_MASK | NAMETABLE_MASK | COARSE_Y_MASK);
+                        this.vramAddr ^= 0x0400;
+                    }
+
+                    // Increment fine Y after the last tile on the line
+                    if (cycle == 256)
+                    {
+                        if ((this.vramAddr & FINE_Y_MASK) != FINE_Y_MASK)
+                        {
+                            this.vramAddr += 0x1000;
+                        }
+                        else
+                        {
+                            // Overflow - reset fine Y to 0 and increment coarse Y
+                            this.vramAddr &= 0x8FFF;
+
+                            int coarseY = (vramAddr & COARSE_Y_MASK) >> 5;
+                            if (coarseY == 29)
+                            {
+                                // Normal overflow - reset coarse Y to 0 and flip to next nametable
+                                coarseY = 0;
+                                this.vramAddr ^= 0x0800;
+                            }
+                            else if (coarseY == 31)
+                            {
+                                // Super overflow - Coarse Y will never naturally exceed 29, but it's possible to manually
+                                //  set it to a larger value.  In that case, the overflow doesn't cause a nametable switch.
+                                coarseY = 0;
+                            }
+                            else
+                            {
+                                coarseY++;
+                            }
+
+                            this.vramAddr = (UInt16)((this.vramAddr & (FINE_Y_MASK | NAMETABLE_MASK | COARSE_X_MASK)) | (coarseY << 5));
+                        }
+                    }
+
                     break;
             }
         }
@@ -743,37 +811,26 @@ namespace NesEmulator.PPU
 
             switch (step)
             {
-                case 0:
-                    // Cycle 0: Put address of nametable garbage on bus
-                    this.ppuAddr = 0x00; // TODO: Where does the real thing read from?
-                    break;
-
                 case 1:
-                    // Cycle 1: Read and discard nametable garbage
-                    this.ppuBus.Read(this.ppuAddr);
+                    // Cycle 0 / 1: Read and discard nametable garbage
+                    this.ppuBus.Read(0x00);
                     break;
 
                 case 2:
-                    // Cycle 2: Put address of nametable garbage on bus, load attribute byte
-                    this.ppuAddr = 0x00;
+                    // Cycle 2: load attribute byte
                     this.spriteAttributeLatch[sprite] = this.secondaryOam[(sprite * 4) + 2];
                     break;
 
                 case 3:
                     // Cycle 3: Read and discard nametable garbage, load X coordinate
-                    this.ppuBus.Read(this.ppuAddr);
+                    this.ppuBus.Read(0x00);
                     this.spriteXPositionCounter[sprite] = this.secondaryOam[(sprite * 4) + 3];
-                    break;
-
-                case 4:
-                    // Cycle 4: Put address of low byte of sprite bitmap on the bus
-                    this.ppuAddr = (UInt16)(this.spritePatternTableAddr + (this.secondaryOam[(sprite * 4) + 1] * 16 + (this.scanline - this.secondaryOam[(sprite * 4)])));
                     break;
 
                 case 5:
                     {
-                        // Cycle 5: Read low byte of sprite bitmap
-                        byte pattern = this.ppuBus.Read(this.ppuAddr);
+                        // Cycle 4 / 5: Read low byte of sprite bitmap
+                        byte pattern = this.ppuBus.Read(this.spritePatternTableAddr + (this.secondaryOam[(sprite * 4) + 1] * 16 + (this.scanline - this.secondaryOam[(sprite * 4)])));
 
                         if ((this.spriteAttributeLatch[sprite] & 0x40) == 0x40)
                         {
@@ -791,15 +848,10 @@ namespace NesEmulator.PPU
                     }
                     break;
 
-                case 6:
-                    // Cycle 6: Put address of high byte of sprite bitmap on the bus
-                    this.ppuAddr = (UInt16)(this.spritePatternTableAddr + (this.secondaryOam[(sprite * 4) + 1] * 16 + 8 + (this.scanline - this.secondaryOam[(sprite * 4)])));
-                    break;
-
                 case 7:
                     {
-                        // Cycle 7: Read high byte of sprite bitmap
-                        byte pattern = this.ppuBus.Read(this.ppuAddr);
+                        // Cycle 6 / 7: Read high byte of sprite bitmap
+                        byte pattern = this.ppuBus.Read(this.spritePatternTableAddr + (this.secondaryOam[(sprite * 4) + 1] * 16 + 8 + (this.scanline - this.secondaryOam[(sprite * 4)])));
 
                         if ((this.spriteAttributeLatch[sprite] & 0x40) == 0x40)
                         {
