@@ -587,7 +587,7 @@ namespace NesEmulator.PPU
 
                             // If the Y coordinate of the sprite is in range, we need to copy the rest of its data
                             //  from primary OAM
-                            if (this.scanline >= this.spriteEvalTemp && this.scanline < (this.spriteEvalTemp + 8))
+                            if (this.scanline >= this.spriteEvalTemp && this.scanline < (this.spriteEvalTemp + (this.tallSprites ? 16 : 8)))
                             {
                                 if (!this.spriteZeroOnNextScanline)
                                 {
@@ -828,9 +828,48 @@ namespace NesEmulator.PPU
                     break;
 
                 case 5:
+                case 7:
                     {
                         // Cycle 4 / 5: Read low byte of sprite bitmap
-                        byte pattern = this.ppuBus.Read(this.spritePatternTableAddr + (this.secondaryOam[(sprite * 4) + 1] * 16 + (this.scanline - this.secondaryOam[(sprite * 4)])));
+                        // Cycle 6 / 7: Read high byte of sprite bitmap
+                        int tileIndex = this.secondaryOam[(sprite * 4) + 1];
+                        int patternTableAddr = this.spritePatternTableAddr;
+                        int tileRow = this.scanline - this.secondaryOam[sprite * 4];
+                        bool vFlip = ((this.spriteAttributeLatch[sprite] & 0x80) == 0x80);
+
+                        if (this.tallSprites)
+                        {
+                            patternTableAddr = ((tileIndex & 0x01) == 0x01) ? 0x1000 : 0x0000;
+                            tileIndex &= 0xFE;
+
+                            if (tileRow >= 8)
+                            {
+                                tileRow -= 8;
+
+                                if (!vFlip)
+                                {
+                                    // 8x16 sprites also flip their tile order when flipped vertically - the
+                                    //  higher-numbered tile goes on top and the lower-numbered tile underneath.
+                                    tileIndex++;
+                                }
+                            }
+                            else if (vFlip)
+                            {
+                                tileIndex++;
+                            }
+                        }
+
+                        int tileAddress = patternTableAddr +
+                            // Select tile
+                            (tileIndex * 16) +
+
+                            // Select plane
+                            ((step == 5) ? 0 : 8) +
+
+                            // Select row
+                            (vFlip ? (7 - tileRow) : tileRow);
+
+                        byte pattern = this.ppuBus.Read(tileAddress);
 
                         if ((this.spriteAttributeLatch[sprite] & 0x40) == 0x40)
                         {
@@ -844,26 +883,15 @@ namespace NesEmulator.PPU
                             pattern = 0x00;
                         }
 
-                        this.spriteBitmapLoShiftRegister[sprite] = pattern;
-                    }
-                    break;
-
-                case 7:
-                    {
-                        // Cycle 6 / 7: Read high byte of sprite bitmap
-                        byte pattern = this.ppuBus.Read(this.spritePatternTableAddr + (this.secondaryOam[(sprite * 4) + 1] * 16 + 8 + (this.scanline - this.secondaryOam[(sprite * 4)])));
-
-                        if ((this.spriteAttributeLatch[sprite] & 0x40) == 0x40)
+                        // Store in appropriate shift register
+                        if (step == 5)
                         {
-                            pattern = (byte)(((pattern * 0x0802u & 0x22110u) | (pattern * 0x8020u & 0x88440u)) * 0x10101u >> 16);
+                            this.spriteBitmapLoShiftRegister[sprite] = pattern;
                         }
-
-                        if (sprite >= this.spritesFound)
+                        else
                         {
-                            pattern = 0x00;
+                            this.spriteBitmapHiShiftRegister[sprite] = pattern;
                         }
-
-                        this.spriteBitmapHiShiftRegister[sprite] = pattern;
                     }
                     break;
             }
