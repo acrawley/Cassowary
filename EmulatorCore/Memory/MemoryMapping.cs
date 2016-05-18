@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Globalization;
+using EmulatorCore.Components.Core;
 using EmulatorCore.Components.Memory;
 
 namespace EmulatorCore.Memory
@@ -23,6 +26,14 @@ namespace EmulatorCore.Memory
         internal int EndAddress;
 
         #endregion
+
+        public override string ToString()
+        {
+            return String.Format(CultureInfo.CurrentCulture, "0x{0:X8} - 0x{1:X8} => {2}",
+                this.StartAddress,
+                this.EndAddress,
+                (this.Device is IEmulatorComponent) ? ((IEmulatorComponent)this.Device).Name : this.Device.GetType().Name);
+        }
 
         #region IMemoryMapping Implementation
 

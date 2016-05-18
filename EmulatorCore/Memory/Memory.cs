@@ -10,7 +10,10 @@ namespace EmulatorCore.Memory
         #region Private Fields
 
         private byte[] contents;
-        int startAddress;
+        private int startAddress;
+        private int size;
+        private IMemoryMapping mapping;
+        private IMemoryBus bus;
 
         #endregion
 
@@ -20,9 +23,27 @@ namespace EmulatorCore.Memory
         {
             this.Name = name;
             this.contents = new byte[size];
-            this.startAddress = startAddress;
+            this.bus = bus;
 
-            bus.RegisterMappedDevice(this, startAddress, startAddress + (size - 1));
+            this.startAddress = startAddress;
+            this.size = size;
+
+            this.mapping = bus.RegisterMappedDevice(this, startAddress, startAddress + (size - 1));
+        }
+
+        public void Remap(int newStartAddress)
+        {
+            if (this.startAddress != newStartAddress)
+            {
+                this.startAddress = newStartAddress;
+
+                this.bus.RemoveMapping(this.mapping);
+
+                if (newStartAddress != -1)
+                {
+                    this.mapping = this.bus.RegisterMappedDevice(this, this.startAddress, this.startAddress + (this.size - 1));
+                }
+            }
         }
 
         #endregion

@@ -1002,6 +1002,7 @@ namespace NesEmulator.CPU
         #region Instruction Decoding
 
         int breakpoint = -1;
+        bool dump = false;
 
         private int DispatchNextInstruction()
         {
@@ -1020,7 +1021,10 @@ namespace NesEmulator.CPU
                 Debugger.Break();
             }
 
-            //this.DumpState(instruction, arg1, arg2);
+            if (this.dump)
+            {
+                this.DumpState(instruction, arg1, arg2);
+            }
 
             this.PC += instruction.Size;
 
@@ -1380,7 +1384,7 @@ namespace NesEmulator.CPU
             state.AppendFormat("A:{0:X2} X:{1:X2} Y:{2:X2} P:{3} SP:{4:X2}",
                 this.A, this.X, this.Y, this.GetFlagsString(), this.S);
 
-            Debug.WriteLine(state.ToString());
+            Console.WriteLine(state.ToString());
         }
 
         private void PushStack(byte data)
@@ -1433,17 +1437,17 @@ namespace NesEmulator.CPU
 
                 case AddressingMode.ZeroPage:
                     operands = String.Format(CultureInfo.InvariantCulture, "${0:X2}", addr);
-                    detail = String.Format(CultureInfo.InvariantCulture, "= {0:X2}", this.cpuBus.Read(addr));
+                    detail = String.Format(CultureInfo.InvariantCulture, "= {0:X2}", addr == 0x2007 ? 0 : this.cpuBus.Read(addr));
                     break;
 
                 case AddressingMode.ZeroPageIndexedX:
                     operands = String.Format(CultureInfo.InvariantCulture, "${0:X2},X", (byte)(addr - this.X));
-                    detail = String.Format(CultureInfo.InvariantCulture, "@ {0:X2} = {1:X2}", addr, this.cpuBus.Read(addr));
+                    detail = String.Format(CultureInfo.InvariantCulture, "@ {0:X2} = {1:X2}", addr, addr == 0x2007 ? 0 : this.cpuBus.Read(addr));
                     break;
 
                 case AddressingMode.ZeroPageIndexedY:
                     operands = String.Format(CultureInfo.InvariantCulture, "${0:X2},Y", (byte)(addr - this.Y));
-                    detail = String.Format(CultureInfo.InvariantCulture, "@ {0:X2} = {1:X2}", addr, cpuBus.Read(addr));
+                    detail = String.Format(CultureInfo.InvariantCulture, "@ {0:X2} = {1:X2}", addr, addr == 0x2007 ? 0 : cpuBus.Read(addr));
                     break;
 
                 case AddressingMode.Absolute:
@@ -1451,18 +1455,18 @@ namespace NesEmulator.CPU
                     if (op.Implementation != null)
                     {
                         // Dereference pointer for non-jump instructions
-                        detail = String.Format(CultureInfo.InvariantCulture, "= {0:X2}", this.cpuBus.Read(addr));
+                        detail = String.Format(CultureInfo.InvariantCulture, "= {0:X2}", addr == 0x2007 ? 0 : this.cpuBus.Read(addr));
                     }
                     break;
 
                 case AddressingMode.AbsoluteIndexedX:
                     operands = String.Format(CultureInfo.InvariantCulture, "${0:X4},X", (UInt16)(addr - this.X));
-                    detail = String.Format(CultureInfo.InvariantCulture, "@ {0:X4} = {1:X2}", addr, cpuBus.Read(addr));
+                    detail = String.Format(CultureInfo.InvariantCulture, "@ {0:X4} = {1:X2}", addr, addr == 0x2007 ? 0 : cpuBus.Read(addr));
                     break;
 
                 case AddressingMode.AbsoluteIndexedY:
                     operands = String.Format(CultureInfo.InvariantCulture, "${0:X4},Y", (UInt16)(addr - this.Y));
-                    detail = String.Format(CultureInfo.InvariantCulture, "@ {0:X4} = {1:X2}", addr, cpuBus.Read(addr));
+                    detail = String.Format(CultureInfo.InvariantCulture, "@ {0:X4} = {1:X2}", addr, addr == 0x2007 ? 0 : cpuBus.Read(addr));
                     break;
 
                 case AddressingMode.Relative:
@@ -1476,12 +1480,12 @@ namespace NesEmulator.CPU
 
                 case AddressingMode.IndexedIndirect:
                     operands = String.Format(CultureInfo.InvariantCulture, "(${0:X2},X)", arg1);
-                    detail = String.Format(CultureInfo.InvariantCulture, "@ {0:X2} = {1:X4} = {2:X2}", (arg1 + this.X) % 0x100, addr, this.cpuBus.Read(addr));
+                    detail = String.Format(CultureInfo.InvariantCulture, "@ {0:X2} = {1:X4} = {2:X2}", (arg1 + this.X) % 0x100, addr, addr == 0x2007 ? 0 : this.cpuBus.Read(addr));
                     break;
 
                 case AddressingMode.IndirectIndexed:
                     operands = String.Format(CultureInfo.InvariantCulture, "(${0:X2}),Y", arg1);
-                    detail = String.Format(CultureInfo.InvariantCulture, "= {0:X4} @ {1:X4} = {2:X2}", (UInt16)(addr - this.Y), addr, this.cpuBus.Read(addr));
+                    detail = String.Format(CultureInfo.InvariantCulture, "= {0:X4} @ {1:X4} = {2:X2}", (UInt16)(addr - this.Y), addr, addr == 0x2007 ? 0 : this.cpuBus.Read(addr));
                     break;
 
             }

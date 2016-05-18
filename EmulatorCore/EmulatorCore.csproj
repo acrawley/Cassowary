@@ -62,12 +62,14 @@
     <Compile Include="Components\CPU\IProcessorCore.cs" />
     <Compile Include="Components\CPU\IProcessorInterrupt.cs" />
     <Compile Include="Components\CPU\IProcessorRegister.cs" />
+    <Compile Include="Components\Memory\IMemoryMirroring.cs" />
     <Compile Include="Extensions\ProcessorExtensions.cs" />
     <Compile Include="Memory\MemoryMapping.cs" />
     <Compile Include="EmulatorBase.cs" />
     <Compile Include="Extensions\MemoryBusExtensions.cs" />
     <Compile Include="Extensions\TupleCollectionExtensions.cs" />
     <Compile Include="Memory\MemoryBus.cs" />
+    <Compile Include="Memory\MemoryMirroring.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Memory\Memory.cs" />
     <Compile Include="Services\UI\IViewFactory.cs" />

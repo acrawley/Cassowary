@@ -18,17 +18,18 @@ namespace NesEmulator.ROM.Readers
     {
         bool IsValidImage { get; }
 
-        int PrgRomBanks { get; }
-        int PrgRamBanks { get; }
-        int ChrRomBanks { get; }
+        int PrgRomSize { get; }
+        int PrgRamSize { get; }
+        int ChrRomSize { get; }
 
-        void GetPrgRomBank(byte[] data, int bank, int offset);
-        void GetChrRomBank(byte[] data, int bank, int offset);
+        void GetPrgRom(int sourceIndex, byte[] destination, int destinationIndex, int length);
+        void GetChrRom(int sourceIndex, byte[] destination, int destinationIndex, int length);
 
         MirroringMode Mirroring { get; }
         bool HasSaveRam { get; }
         bool HasTrainer { get; }
         int Mapper { get; }
+        int SubMapper { get; }
 
         bool IsVsUnisystem { get; }
         bool IsPlayChoice10 { get; }

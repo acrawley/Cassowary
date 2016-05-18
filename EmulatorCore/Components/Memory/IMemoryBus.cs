@@ -8,13 +8,18 @@ namespace EmulatorCore.Components.Memory
         byte Read(int address);
         void Write(int address, byte value);
 
-        void SetMirroringRange(int sourceStartAddress, int sourceEndAddress, int mirrorStartAddress, int mirrorEndAddress);
 
-        IMemoryMapping RegisterMappedDevice(IMemoryMappedDevice device, int address);
+        IEnumerable<IMemoryMirroring> Mirrorings { get; }
+
+        IMemoryMirroring SetMirroringRange(int sourceStartAddress, int sourceEndAddress, int mirrorStartAddress, int mirrorEndAddress);
+
+        void RemoveMirroring(IMemoryMirroring mirroring);
+
+
+        IEnumerable<IMemoryMapping> Mappings { get; }
+
         IMemoryMapping RegisterMappedDevice(IMemoryMappedDevice device, int startAddress, int endAddress);
 
         void RemoveMapping(IMemoryMapping mapping);
-
-        IEnumerable<IMemoryMapping> Mappings { get; }
     }
 }

@@ -39,7 +39,6 @@ namespace NesEmulator
         private IMemoryBus cpuBus;
         private IMemoryBus ppuBus;
         private Memory cpuRam;
-        private Memory ppuRam;
         private Ricoh2C02 ppu;
 
         private bool run;
@@ -52,7 +51,6 @@ namespace NesEmulator
             this.ppuBus = new MemoryBus(16, "PPU Bus");
             this.loader = new NesRomLoader(this.cpuBus, this.ppuBus);
             this.cpuRam = new Memory("CPU RAM", this.cpuBus, 0x0000, 0x800);
-            this.ppuRam = new Memory("PPU RAM", this.ppuBus, 0x2000, 0x1000);
             this.cpu = new Ricoh2A03(this.cpuBus);
 
             this.ppu = new Ricoh2C02(this.cpu, this.cpuBus, this.ppuBus);

@@ -26,6 +26,7 @@ namespace NesEmulator.ROM.Readers
     internal class iNesReader : IImageReader
     {
         private const int PrgRomBankSize = 1024 * 16;
+        private const int PrgRamBankSize = 1024 * 8;
         private const int ChrRomBankSize = 1024 * 8;
 
         private Stream imageStream;
@@ -48,39 +49,53 @@ namespace NesEmulator.ROM.Readers
             }
         }
 
-        public void GetPrgRomBank(byte[] buffer, int bank, int offset)
+        public void GetPrgRom(int sourceIndex, byte[] destination, int destinationIndex, int length)
         {
             this.EnsureValidImage();
 
-            if (bank >= this.PrgRomBanks)
+            if (sourceIndex >= this.PrgRomSize)
             {
-                throw new ArgumentOutOfRangeException("bank");
+                throw new ArgumentOutOfRangeException(nameof(sourceIndex));
             }
 
-            int romOffset = 16 + 
-                            (this.HasTrainer ? 512 : 0) + 
-                            PrgRomBankSize * bank;
+            if (sourceIndex + length > this.PrgRomSize)
+            {
+                throw new ArgumentOutOfRangeException(nameof(length)); 
+            }
+
+            int romOffset = 16 +
+                            (this.HasTrainer ? 512 : 0) +
+                            sourceIndex;
             this.imageStream.Seek(romOffset, SeekOrigin.Begin);
-            this.imageStream.Read(buffer, offset, PrgRomBankSize);
+            if (this.imageStream.Read(destination, destinationIndex, length) != length)
+            {
+                throw new InvalidOperationException();
+            }
         }
 
-        public void GetChrRomBank(byte[] buffer, int bank, int offset)
+        public void GetChrRom(int sourceIndex, byte[] destination, int destinationIndex, int length)
         {
             this.EnsureValidImage();
 
-            if (bank >= this.ChrRomBanks)
+            if (sourceIndex >= this.ChrRomSize)
             {
-                throw new ArgumentOutOfRangeException("bank");
+                throw new ArgumentOutOfRangeException(nameof(sourceIndex));
             }
 
-            byte[] prgRomBank = new byte[ChrRomBankSize];
+            if (sourceIndex + length > this.ChrRomSize)
+            {
+                throw new ArgumentOutOfRangeException(nameof(length));
+            }
 
-            int romOffset = 16 + 
-                            (this.HasTrainer ? 512 : 0) + 
-                            (PrgRomBankSize * this.PrgRomBanks) + 
-                            ChrRomBankSize * bank;
+            int romOffset = 16 +
+                            (this.HasTrainer ? 512 : 0) +
+                            this.PrgRomSize +
+                            sourceIndex;
             this.imageStream.Seek(romOffset, SeekOrigin.Begin);
-            this.imageStream.Read(buffer, offset, ChrRomBankSize);
+            if (this.imageStream.Read(destination, destinationIndex, length) != length)
+            {
+                throw new InvalidOperationException();
+            }
         }
 
         #region IImageReader Implementation
@@ -90,7 +105,7 @@ namespace NesEmulator.ROM.Readers
             get
             {
                 // Header should start with string "NES\x1a" and not have the bits set
-                //  in Flags7 indicating that it's in iNES 2.0 format
+                //  in Flags7 indicating that it's in NES 2.0 format
                 return header[0] == 0x4e &&
                        header[1] == 0x45 &&
                        header[2] == 0x53 &&
@@ -99,51 +114,51 @@ namespace NesEmulator.ROM.Readers
             }
         }
 
-        private int _prgRomBanks = -1;
-        public int PrgRomBanks
+        private int _prgRomSize = -1;
+        public int PrgRomSize
         {
             get
             {
                 this.EnsureValidImage();
 
-                if (this._prgRomBanks == -1)
+                if (this._prgRomSize == -1)
                 {
-                    this._prgRomBanks = header[4];
+                    this._prgRomSize = PrgRomBankSize * header[4];
                 }
 
-                return this._prgRomBanks;
+                return this._prgRomSize;
             }
         }
 
-        private int _prgRamBanks = -1;
-        public int PrgRamBanks
+        private int _prgRamSize = -1;
+        public int PrgRamSize
         {
             get
             {
                 this.EnsureValidImage();
 
-                if (this._prgRamBanks == -1)
+                if (this._prgRamSize == -1)
                 {
-                    this._prgRamBanks = this.header[8];
+                    this._prgRamSize = PrgRamBankSize * this.header[8];
                 }
 
-                return this._prgRamBanks;
+                return this._prgRamSize;
             }
         }
 
-        private int _chrRomBanks = -1;
-        public int ChrRomBanks
+        private int _chrRomSize = -1;
+        public int ChrRomSize
         {
             get
             {
                 this.EnsureValidImage();
 
-                if (this._chrRomBanks == -1)
+                if (this._chrRomSize == -1)
                 {
-                    this._chrRomBanks = this.header[5];
+                    this._chrRomSize = ChrRomBankSize * this.header[5];
                 }
 
-                return this._chrRomBanks;
+                return this._chrRomSize;
             }
         }
 
@@ -156,23 +171,17 @@ namespace NesEmulator.ROM.Readers
 
                 if (this._mirroring == MirroringMode.Unknown)
                 {
-                    switch (this.header[6] & 0x09)
+                    if ((this.header[6] & 0x08) == 0x08)
                     {
-                        case 0x00:
-                            this._mirroring = MirroringMode.Horizontal;
-                            break;
-
-                        case 0x01:
-                            this._mirroring = MirroringMode.Vertical;
-                            break;
-
-                        case 0x08:
-                            this._mirroring = MirroringMode.FourScreen;
-                            break;
-
-                        default:
-                            Debug.Fail(String.Format(CultureInfo.CurrentCulture, "Unexpected mirroring mode, header.Flags6 = 0x{0:x}", this.header[6]));
-                            break;
+                        this._mirroring = MirroringMode.FourScreen;
+                    }
+                    else if ((this.header[6] & 0x01) == 0x01)
+                    {
+                        this._mirroring = MirroringMode.Vertical;
+                    }
+                    else if ((this.header[6] & 0x01) == 0x00)
+                    {
+                        this._mirroring = MirroringMode.Horizontal;
                     }
                 }
 
@@ -209,7 +218,7 @@ namespace NesEmulator.ROM.Readers
 
                 if (this._mapper == -1)
                 {
-                    int mapperLowNibble = (this.header[6] & 0xF0) >> 4;
+                    int mapperLowBits = (this.header[6] & 0xF0) >> 4;
 
                     // Early iNES dumps often had garbage in the header reserved bits - if they're not 0,
                     //  assume only the low nibble of the mapper number is valid.
@@ -218,14 +227,19 @@ namespace NesEmulator.ROM.Readers
                         this.header[14] == 0 &&
                         this.header[15] == 0)
                     {
-                        this._mapper = mapperLowNibble + (this.header[7] & 0xF0);
+                        this._mapper = mapperLowBits + (this.header[7] & 0xF0);
                     }
 
-                    this._mapper = mapperLowNibble;
+                    this._mapper = mapperLowBits;
                 }
 
                 return this._mapper;
             }
+        }
+
+        public int SubMapper
+        {
+            get { return 0; }
         }
 
         public bool IsVsUnisystem

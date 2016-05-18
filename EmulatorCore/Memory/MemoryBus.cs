@@ -14,35 +14,11 @@ namespace EmulatorCore.Memory
         #region Private Fields
 
         private MemoryMapping[] mappings;
-        private Mirroring[] mirrorings;
+        private MemoryMirroring[] mirrorings;
         private int width;
         private int size;
 
         #endregion
-
-        private class Mirroring
-        {
-            #region Constructor
-
-            internal Mirroring(int sourceStartAddress, int sourceSize, int mirrorStartAddress, int mirrorEndAddress)
-            {
-                this.SourceStartAddress = sourceStartAddress;
-                this.SourceSize = sourceSize;
-                this.MirrorStartAddress = mirrorStartAddress;
-                this.MirrorEndAddress = mirrorEndAddress;
-            }
-
-            #endregion
-
-            #region Properties
-
-            internal int SourceStartAddress;
-            internal int SourceSize;
-            internal int MirrorStartAddress;
-            internal int MirrorEndAddress;
-
-            #endregion
-        }
 
         #region Constructor
 
@@ -53,7 +29,7 @@ namespace EmulatorCore.Memory
             this.size = (int)Math.Pow(2, width);
 
             this.mappings = new MemoryMapping[0];
-            this.mirrorings = new Mirroring[0];
+            this.mirrorings = new MemoryMirroring[0];
         }
 
         #endregion
@@ -84,10 +60,10 @@ namespace EmulatorCore.Memory
             if (activeMapping == null)
             {
                 // If we weren't able to find a mapping for the address, check to see if the address is in a mirrored range
-                Mirroring activeMirroring = null;
+                MemoryMirroring activeMirroring = null;
                 for (int i = 0; i < this.mirrorings.Length; i++)
                 {
-                    Mirroring mirroring = this.mirrorings[i];
+                    MemoryMirroring mirroring = this.mirrorings[i];
                     if (mirroring.MirrorStartAddress <= address && mirroring.MirrorEndAddress >= address)
                     {
                         activeMirroring = mirroring;
@@ -119,14 +95,6 @@ namespace EmulatorCore.Memory
 
         #region IMemoryBus Implementation
 
-        IEnumerable<IMemoryMapping> IMemoryBus.Mappings
-        {
-            get
-            {
-                return new ReadOnlyCollection<IMemoryMapping>(this.mappings.Cast<IMemoryMapping>().ToList());
-            }
-        }
-
         byte IMemoryBus.Read(int address)
         {
             IMemoryMappedDevice device = this.GetDeviceAtAddress(ref address);
@@ -151,33 +119,12 @@ namespace EmulatorCore.Memory
             device.Write(address, value);
         }
 
-        void IMemoryBus.SetMirroringRange(int sourceStartAddress, int sourceEndAddress, int mirrorStartAddress, int mirrorEndAddress)
+        IEnumerable<IMemoryMapping> IMemoryBus.Mappings
         {
-            int sourceSize = (sourceEndAddress - sourceStartAddress) + 1;
-            int mirrorSize = (mirrorEndAddress - mirrorStartAddress) + 1;
-            if (mirrorSize % sourceSize != 0)
+            get
             {
-                throw new InvalidOperationException("Size of mirrored range must be a multiple of size of source range!");
+                return new ReadOnlyCollection<IMemoryMapping>(this.mappings.Cast<IMemoryMapping>().ToList());
             }
-
-            Mirroring[] newArray = new Mirroring[this.mirrorings.Length + 1];
-            Array.Copy(this.mirrorings, newArray, this.mirrorings.Length);
-            newArray[this.mirrorings.Length] = new Mirroring(sourceStartAddress, sourceSize, mirrorStartAddress, mirrorEndAddress);
-
-            this.mirrorings = newArray;
-        }
-
-        IMemoryMapping IMemoryBus.RegisterMappedDevice(IMemoryMappedDevice device, int address)
-        {
-            MemoryMapping mapping = new MemoryMapping(device, address, address);
-
-            MemoryMapping[] newArray = new MemoryMapping[this.mappings.Length + 1];
-            Array.Copy(this.mappings, newArray, this.mappings.Length);
-            newArray[this.mappings.Length] = mapping;
-
-            this.mappings = newArray;
-
-            return mapping;
         }
 
         IMemoryMapping IMemoryBus.RegisterMappedDevice(IMemoryMappedDevice device, int startAddress, int endAddress)
@@ -195,7 +142,47 @@ namespace EmulatorCore.Memory
 
         void IMemoryBus.RemoveMapping(IMemoryMapping mapping)
         {
-            //this.mappings.Remove((MemoryMapping)mapping);
+            this.mappings = this.mappings.Where(m =>
+                m.Device != mapping.Device ||
+                m.StartAddress != mapping.StartAddress ||
+                m.EndAddress != mapping.EndAddress).ToArray();
+        }
+
+        IEnumerable<IMemoryMirroring> IMemoryBus.Mirrorings
+        {
+            get
+            {
+                return new ReadOnlyCollection<IMemoryMirroring>(this.mirrorings.Cast<IMemoryMirroring>().ToList());
+            }
+        }
+
+        IMemoryMirroring IMemoryBus.SetMirroringRange(int sourceStartAddress, int sourceEndAddress, int mirrorStartAddress, int mirrorEndAddress)
+        {
+            int sourceSize = (sourceEndAddress - sourceStartAddress) + 1;
+            int mirrorSize = (mirrorEndAddress - mirrorStartAddress) + 1;
+            if (mirrorSize % sourceSize != 0)
+            {
+                throw new InvalidOperationException("Size of mirrored range must be a multiple of size of source range!");
+            }
+
+            MemoryMirroring mirroring = new MemoryMirroring(sourceStartAddress, sourceSize, mirrorStartAddress, mirrorEndAddress);
+
+            MemoryMirroring[] newArray = new MemoryMirroring[this.mirrorings.Length + 1];
+            Array.Copy(this.mirrorings, newArray, this.mirrorings.Length);
+            newArray[this.mirrorings.Length] = mirroring;
+
+            this.mirrorings = newArray;
+
+            return mirroring;
+        }
+
+        void IMemoryBus.RemoveMirroring(IMemoryMirroring mirroring)
+        {
+            this.mirrorings = this.mirrorings.Where(m =>
+                m.SourceStartAddress != mirroring.SourceStartAddress ||
+                m.SourceSize != mirroring.SourceSize ||
+                m.MirrorStartAddress != mirroring.MirrorStartAddress ||
+                m.MirrorEndAddress != mirroring.MirrorEndAddress).ToArray();
         }
 
         #endregion
