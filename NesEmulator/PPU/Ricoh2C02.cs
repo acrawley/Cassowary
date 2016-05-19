@@ -945,6 +945,7 @@ namespace NesEmulator.PPU
             if (address >= 0x3F00 && address <= 0x3F1F)
             {
                 address -= 0x3F00;
+                value &= 0x3F;
 
                 // The first entry of the first palette is the "universal" background color used
                 //  for any pixel with a value of 0.  The first entries of the other palettes can
