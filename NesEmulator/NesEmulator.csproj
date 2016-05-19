@@ -59,6 +59,7 @@
     <Compile Include="PPU\Ricoh2C02.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="CPU\Ricoh2A03.cs" />
+    <Compile Include="ROM\Mappers\CNROM.cs" />
     <Compile Include="ROM\Mappers\IMapper.cs" />
     <Compile Include="ROM\Mappers\IMapperFactory.cs" />
     <Compile Include="ROM\Mappers\MapperBase.cs" />
