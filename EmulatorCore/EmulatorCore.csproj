@@ -67,7 +67,6 @@
     <Compile Include="Memory\MemoryMapping.cs" />
     <Compile Include="EmulatorBase.cs" />
     <Compile Include="Extensions\MemoryBusExtensions.cs" />
-    <Compile Include="Extensions\TupleCollectionExtensions.cs" />
     <Compile Include="Memory\MemoryBus.cs" />
     <Compile Include="Memory\MemoryMirroring.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

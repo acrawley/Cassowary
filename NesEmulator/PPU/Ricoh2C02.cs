@@ -377,14 +377,7 @@ namespace NesEmulator.PPU
             }
             else if (this.cycle >= 321 && this.cycle <= 336 && this.showBackground)
             {
-                if (this.cycle <= 328)
-                {
-                    this.FetchTileData();
-                }
-                else
-                {
-                    this.FetchTileData();
-                }
+                this.FetchTileData();
             }
             else if (this.cycle == 339 && this.oddFrame)
             {
@@ -467,29 +460,25 @@ namespace NesEmulator.PPU
 
                 this.Framebuffer.SetPixel(this.cycle - 1, this.scanline, pixelColor);
             }
-            else if (cycle == 257 && this.showBackground)
+            else if (cycle <= 320)
             {
-                // Copy horizontal scroll data from temp register to VRAM addr
-                // v: ... .F ..... EDCBA = t: ... .F ..... EDCBA
-                this.vramAddr = (UInt16)((this.vramAddrTemp & HORIZONTAL_MASK) | (this.vramAddr & VERTICAL_MASK));
-            }
-            else if (cycle <= 320 && this.showSprites)
-            {
-                // Pre-fetch sprite tiles for next scanline
-                this.FetchSpriteData();
+                if (cycle == 257 && this.showBackground)
+                {
+                    // Copy horizontal scroll data from temp register to VRAM addr
+                    // v: ... .F ..... EDCBA = t: ... .F ..... EDCBA
+                    this.vramAddr = (UInt16)((this.vramAddrTemp & HORIZONTAL_MASK) | (this.vramAddr & VERTICAL_MASK));
+                }
 
+                if (this.showSprites)
+                {
+                    // Pre-fetch sprite tiles for next scanline
+                    this.FetchSpriteData();
+                }
             }
             else if (cycle <= 336 && this.showBackground)
             {
                 // Pre-fetch first two background tiles for next scanline
-                if (cycle <= 328)
-                {
-                    this.FetchTileData();
-                }
-                else
-                {
-                    this.FetchTileData();
-                }
+                this.FetchTileData();
             }
 
             // Sprite evaluation for next scanline

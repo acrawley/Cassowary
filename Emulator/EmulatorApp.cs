@@ -77,14 +77,14 @@ namespace Emulator
         {
             //emulator.LoadFile(@"Z:\public\ROMs\NES\World\Super Mario Bros. (W) [!].nes");
             //emulator.LoadFile(@"Z:\public\ROMs\NES\World\Mario Bros. (W) [!].nes");
-            //emulator.LoadFile(@"Z:\public\ROMs\NES\USA\Arkanoid (U) [!].nes");
+            emulator.LoadFile(@"Z:\public\ROMs\NES\USA\Arkanoid (U) [!].nes");
             //emulator.LoadFile(@"Z:\public\ROMs\NES\World\Donkey Kong (W) (PRG1) [!].nes");
             //emulator.LoadFile(@"Z:\public\ROMs\NES\World\Duck Hunt (W) [!].nes");
             //emulator.LoadFile(@"Z:\public\ROMs\NES\tests\spritecans-2011\spritecans.nes");
             //emulator.LoadFile(@"Z:\public\ROMs\NES\USA\Balloon Fight (U) [!].nes");
 
             //emulator.LoadFile(@"Z:\public\ROMs\NES\USA\Legend of Zelda, The (U) (PRG1) [!].nes");
-            emulator.LoadFile(@"Z:\public\ROMs\NES\Tests\holy_diver\testroms\M1_P128K_C128K.nes");
+            //emulator.LoadFile(@"Z:\public\ROMs\NES\Tests\holy_diver\testroms\M1_P128K_C128K.nes");
             //emulator.LoadFile(@"Z:\public\ROMs\NES\USA\Megaman II (U) [!].nes");
 
             //emulator.LoadFile(@"z:\public\ROMs\NES\tests\nestest.nes");
