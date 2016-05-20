@@ -43,7 +43,7 @@ namespace NesEmulator.ROM.Mappers
 
         private void SetChrBankRegister(byte value)
         {
-            this.chrRomBankMask = (UInt32)(value % this.chrRomBanks) << 12;
+            this.chrRomBankMask = (UInt32)(value % this.chrRomBanks) << 13;
         }
 
         #endregion
