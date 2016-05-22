@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using EmulatorCore.Components;
 using EmulatorCore.Components.Input;
 
-namespace NesEmulator.Input.Devices
+namespace NesEmulator.Input.Devices.Implementation
 {
     [DebuggerDisplay("Button '{Name,nq}', Pressed = {State}")]
     internal class ButtonInputElement : IButtonInputElement

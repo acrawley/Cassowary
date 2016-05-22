@@ -9,7 +9,7 @@ using EmulatorCore.Components;
 using EmulatorCore.Components.Core;
 using EmulatorCore.Components.Input;
 
-namespace NesEmulator.Input.Devices
+namespace NesEmulator.Input.Devices.Implementation
 {
     [Export(typeof(INesInputDeviceFactory))]
     internal class NesControlPadFactory : INesInputDeviceFactory

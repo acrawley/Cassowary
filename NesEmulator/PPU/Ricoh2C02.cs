@@ -682,7 +682,7 @@ namespace NesEmulator.PPU
         private byte nextAttributeLoValue;
         private byte nextAttributeHiValue;
 
-        private void FetchTileData(/*int row, int col, int tileRow*/)
+        private void FetchTileData()
         {
             // Shift bitmap data registeres
             this.tileBitmapLoShiftRegister <<= 1;

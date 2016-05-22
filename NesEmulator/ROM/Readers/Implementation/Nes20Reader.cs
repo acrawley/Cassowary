@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NesEmulator.ROM.Readers
+namespace NesEmulator.ROM.Readers.Implementation
 {
     [Export(typeof(IImageReaderFactory))]
     internal class Nes20ReaderFactory : IImageReaderFactory

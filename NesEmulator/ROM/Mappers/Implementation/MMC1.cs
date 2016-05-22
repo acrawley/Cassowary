@@ -9,7 +9,7 @@ using EmulatorCore.Components.Memory;
 using EmulatorCore.Memory;
 using NesEmulator.ROM.Readers;
 
-namespace NesEmulator.ROM.Mappers
+namespace NesEmulator.ROM.Mappers.Implementation
 {
     [Export(typeof(IMapperFactory))]
     [MapperId(1)]

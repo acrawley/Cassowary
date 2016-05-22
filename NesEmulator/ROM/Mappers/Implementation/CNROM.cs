@@ -7,40 +7,60 @@ using System.Threading.Tasks;
 using EmulatorCore.Components.Memory;
 using NesEmulator.ROM.Readers;
 
-namespace NesEmulator.ROM.Mappers
+namespace NesEmulator.ROM.Mappers.Implementation
 {
     [Export(typeof(IMapperFactory))]
-    [MapperId(0)]
-    internal class NROMFactory : IMapperFactory
+    [MapperId(3)]
+    internal class CNROMMapperFactory : IMapperFactory
     {
         IMapper IMapperFactory.CreateInstance(IImageReader reader, IMemoryBus cpuBus, IMemoryBus ppuBus)
         {
-            return new NROMMapper(reader, cpuBus, ppuBus);
+            return new CNROMMapper(reader, cpuBus, ppuBus);
         }
     }
 
-    internal class NROMMapper : MapperBase, IMemoryMappedDevice
+    internal class CNROMMapper : MapperBase, IMemoryMappedDevice
     {
+        #region Constants
+
+        private const int MaxChrSize = 2 * 1024 * 1024;
+        private const int ChrRomBankSize = 8 * 1024;
+
+        #endregion
+
         #region Private Fields
 
         private byte[] prgRom = new byte[0x8000];
-        private byte[] chrRom = new byte[0x2000];
+        private byte[] chrRom;
+
+        private UInt32 chrRomBankMask;
+
+        private int chrRomBanks;
+
+        #endregion
+
+        #region Registers
+
+        private void SetChrBankRegister(byte value)
+        {
+            this.chrRomBankMask = (UInt32)(value % this.chrRomBanks) << 13;
+        }
 
         #endregion
 
         #region Constructor
 
-        internal NROMMapper(IImageReader reader, IMemoryBus cpuBus, IMemoryBus ppuBus)
+        internal CNROMMapper(IImageReader reader, IMemoryBus cpuBus, IMemoryBus ppuBus)
             : base(reader, cpuBus, ppuBus)
         {
-            if (this.Reader.ChrRomSize != 0x2000)
+            if (this.Reader.PrgRomSize != 16 * 1024 && this.Reader.PrgRomSize != 32 * 1024)
             {
-                throw new InvalidOperationException("NROM expects 1 bank of CHR ROM!");
+                throw new ArgumentOutOfRangeException("CNROM Expects 16 or 32KB of PRG ROM!");
             }
 
-            if (this.Reader.PrgRomSize != 0x4000 && this.Reader.PrgRomSize != 0x8000)
+            if (this.Reader.ChrRomSize > CNROMMapper.MaxChrSize)
             {
-                throw new InvalidOperationException("NROM expects 1 or 2 banks of PRG ROM!");
+                throw new ArgumentOutOfRangeException("CNROM supports a maximum of 2MB of CHR ROM!");
             }
 
             // 2 16KB banks of PRG ROM at CPU 0x8000 and 0xC000
@@ -50,6 +70,11 @@ namespace NesEmulator.ROM.Mappers
             base.MapPpuRange(this, 0x0000, 0x1FFF);
 
             // Load data from ROM
+            this.chrRom = new byte[this.Reader.ChrRomSize];
+            this.chrRomBanks = this.Reader.ChrRomSize / CNROMMapper.ChrRomBankSize;
+
+            this.Reader.GetChrRom(0, this.chrRom, 0, this.Reader.ChrRomSize);
+
             this.Reader.GetPrgRom(0, this.prgRom, 0, 0x4000);
             if (this.Reader.PrgRomSize == 0x4000)
             {
@@ -58,11 +83,6 @@ namespace NesEmulator.ROM.Mappers
             else
             {
                 this.Reader.GetPrgRom(0x4000, this.prgRom, 0x4000, 0x4000);
-            }
-
-            if (this.Reader.ChrRomSize > 0)
-            {
-                this.Reader.GetChrRom(0, this.chrRom, 0, 0x2000);
             }
 
             if (this.Reader.Mirroring == MirroringMode.Horizontal)
@@ -93,13 +113,13 @@ namespace NesEmulator.ROM.Mappers
 
         public override string Name
         {
-            get { return "NROM Mapper"; }
+            get { return "CNROM Mapper"; }
         }
 
         protected override void Dispose()
         {
-            base.DisposeMappings();
-            base.DisposeMirrorings();
+            this.DisposeMappings();
+            this.DisposeMirrorings();
         }
 
         #endregion
@@ -108,20 +128,24 @@ namespace NesEmulator.ROM.Mappers
 
         byte IMemoryMappedDevice.Read(int address)
         {
-            if (address >= 0x8000 && address <= 0xFFFF)
+            if (address <= 0x1FFF)
+            {
+                return this.chrRom[this.chrRomBankMask | ((UInt32)address & 0x1FFF)];
+            }
+            else if (address >= 0x8000 && address <= 0xFFFF)
             {
                 return this.prgRom[address - 0x8000];
             }
-            else if (address >= 0x0000 && address <= 0x1FFF)
-            {
-                return this.chrRom[address];
-            }
 
-            throw new InvalidOperationException();
+            throw new NotImplementedException();
         }
 
         void IMemoryMappedDevice.Write(int address, byte value)
         {
+            if (address >= 8000 && address <= 0xFFFF)
+            {
+                this.SetChrBankRegister(value);
+            }
         }
 
         #endregion

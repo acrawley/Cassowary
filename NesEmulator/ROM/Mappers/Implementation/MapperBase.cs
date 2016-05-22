@@ -8,7 +8,7 @@ using EmulatorCore.Components.Memory;
 using EmulatorCore.Memory;
 using NesEmulator.ROM.Readers;
 
-namespace NesEmulator.ROM.Mappers
+namespace NesEmulator.ROM.Mappers.Implementation
 {
     internal abstract class MapperBase : IMapper
     {

@@ -49,8 +49,8 @@
     <Compile Include="CPU\InstructionData.cs" />
     <Compile Include="CPU\InterruptWrapper.cs" />
     <Compile Include="CPU\RegisterWrapper.cs" />
-    <Compile Include="Input\Devices\ButtonInputElement.cs" />
-    <Compile Include="Input\Devices\NesControlPad.cs" />
+    <Compile Include="Input\Devices\Implementation\ButtonInputElement.cs" />
+    <Compile Include="Input\Devices\Implementation\NesControlPad.cs" />
     <Compile Include="Input\Devices\INesInputDevice.cs" />
     <Compile Include="Input\Devices\INesInputDeviceFactory.cs" />
     <Compile Include="Input\InputManager.cs" />
@@ -59,16 +59,16 @@
     <Compile Include="PPU\Ricoh2C02.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="CPU\Ricoh2A03.cs" />
-    <Compile Include="ROM\Mappers\CNROM.cs" />
+    <Compile Include="ROM\Mappers\Implementation\CNROM.cs" />
     <Compile Include="ROM\Mappers\IMapper.cs" />
     <Compile Include="ROM\Mappers\IMapperFactory.cs" />
-    <Compile Include="ROM\Mappers\MapperBase.cs" />
-    <Compile Include="ROM\Mappers\MMC1.cs" />
-    <Compile Include="ROM\Mappers\NROM.cs" />
+    <Compile Include="ROM\Mappers\Implementation\MapperBase.cs" />
+    <Compile Include="ROM\Mappers\Implementation\MMC1.cs" />
+    <Compile Include="ROM\Mappers\Implementation\NROM.cs" />
     <Compile Include="ROM\Readers\IImageReader.cs" />
     <Compile Include="ROM\Readers\IImageReaderFactory.cs" />
-    <Compile Include="ROM\Readers\Nes20Reader.cs" />
-    <Compile Include="ROM\Readers\iNesReader.cs" />
+    <Compile Include="ROM\Readers\Implementation\Nes20Reader.cs" />
+    <Compile Include="ROM\Readers\Implementation\iNesReader.cs" />
     <Compile Include="ROM\NesRomLoader.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using EmulatorCore.Components;
 using EmulatorCore.Components.Core;
 using EmulatorCore.Components.Input;
 using EmulatorCore.Components.Memory;
 using NesEmulator.Input.Devices;
+using NesEmulator.Input.Devices.Implementation;
 
 namespace NesEmulator.Input
 {
