@@ -299,7 +299,6 @@ namespace NesEmulator.PPU
             if (this.scanline > 260)
             {
                 this.scanline = -1;
-                this.oddFrame = !this.oddFrame;
             }
 
             if (this.scanline == -1)
@@ -379,9 +378,9 @@ namespace NesEmulator.PPU
             {
                 this.FetchTileData();
             }
-            else if (this.cycle == 339 && this.oddFrame)
+            else if (this.cycle == 339 && this.oddFrame && (this.showBackground || this.showSprites))
             {
-                // Pre-render scanline is one cycle shorter on odd frames
+                // Pre-render scanline is one cycle shorter on odd frames if rendering is enabled
                 this.cycle++;
             }
         }
