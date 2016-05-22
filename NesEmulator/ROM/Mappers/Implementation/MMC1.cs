@@ -1,12 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using EmulatorCore.Components.Memory;
-using EmulatorCore.Memory;
 using NesEmulator.ROM.Readers;
 
 namespace NesEmulator.ROM.Mappers.Implementation
@@ -88,21 +83,13 @@ namespace NesEmulator.ROM.Mappers.Implementation
                 case 0x02:
                     // Vertical mirroring: A B
                     //                     A B
-                    base.MapNametableA(0x2000);
-                    base.MirrorPpuRange(0x2000, 0x23FF, 0x2800, 0x2BFF);
-
-                    base.MapNametableB(0x2400);
-                    base.MirrorPpuRange(0x2400, 0x27FF, 0x2C00, 0x2FFF);
+                    base.SetNametableMirroring(MirroringMode.Vertical);
                     break;
 
                 case 0x03:
                     // Horizontal mirroring: A A
                     //                       B B
-                    base.MapNametableA(0x2000);
-                    base.MirrorPpuRange(0x2000, 0x23FF, 0x2400, 0x27FF);
-
-                    base.MapNametableB(0x2800);
-                    base.MirrorPpuRange(0x2800, 0x2BFF, 0x2C00, 0x2FFF);
+                    base.SetNametableMirroring(MirroringMode.Horizontal);
                     break;
             }
 

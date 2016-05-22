@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using EmulatorCore.Components.Memory;
 using NesEmulator.ROM.Readers;
 
@@ -65,26 +61,7 @@ namespace NesEmulator.ROM.Mappers.Implementation
                 this.Reader.GetChrRom(0, this.chrRom, 0, 0x2000);
             }
 
-            if (this.Reader.Mirroring == MirroringMode.Horizontal)
-            {
-                // Horizontal mirroring: A A
-                //                       B B
-                base.MapNametableA(0x2000);
-                base.MirrorPpuRange(0x2000, 0x23FF, 0x2400, 0x27FF);
-
-                base.MapNametableB(0x2800);
-                base.MirrorPpuRange(0x2800, 0x2BFF, 0x2C00, 0x2FFF);
-            }
-            else if (this.Reader.Mirroring == MirroringMode.Vertical)
-            {
-                // Vertical mirroring: A B
-                //                     A B
-                base.MapNametableA(0x2000);
-                base.MirrorPpuRange(0x2000, 0x23FF, 0x2800, 0x2BFF);
-
-                base.MapNametableB(0x2400);
-                base.MirrorPpuRange(0x2400, 0x27FF, 0x2C00, 0x2FFF);
-            }
+            base.SetNametableMirroring(this.Reader.Mirroring);
         }
 
         #endregion

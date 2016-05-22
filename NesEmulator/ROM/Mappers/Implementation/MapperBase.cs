@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -53,6 +54,37 @@ namespace NesEmulator.ROM.Mappers.Implementation
         #endregion
 
         #region Memory Helpers
+
+        protected void SetNametableMirroring(MirroringMode mode)
+        {
+            switch (mode)
+            {
+                case MirroringMode.Horizontal:
+                    // Horizontal mirroring: A A
+                    //                       B B
+                    this.MapNametableA(0x2000);
+                    this.MirrorPpuRange(0x2000, 0x23FF, 0x2400, 0x27FF);
+
+                    this.MapNametableB(0x2800);
+                    this.MirrorPpuRange(0x2800, 0x2BFF, 0x2C00, 0x2FFF);
+
+                    break;
+
+                case MirroringMode.Vertical:
+                    // Vertical mirroring: A B
+                    //                     A B
+                    this.MapNametableA(0x2000);
+                    this.MirrorPpuRange(0x2000, 0x23FF, 0x2800, 0x2BFF);
+
+                    this.MapNametableB(0x2400);
+                    this.MirrorPpuRange(0x2400, 0x27FF, 0x2C00, 0x2FFF);
+
+                    break;
+
+                default:
+                    throw new NotImplementedException(String.Format(CultureInfo.CurrentCulture, "Nametable mirroring mode '{0}' is not implemented!", mode));
+            }
+        }
 
         protected void MapNametableA(int address)
         {

@@ -65,6 +65,7 @@
     <Compile Include="ROM\Mappers\Implementation\MapperBase.cs" />
     <Compile Include="ROM\Mappers\Implementation\MMC1.cs" />
     <Compile Include="ROM\Mappers\Implementation\NROM.cs" />
+    <Compile Include="ROM\Mappers\Implementation\UxROM.cs" />
     <Compile Include="ROM\Readers\IImageReader.cs" />
     <Compile Include="ROM\Readers\IImageReaderFactory.cs" />
     <Compile Include="ROM\Readers\Implementation\Nes20Reader.cs" />
