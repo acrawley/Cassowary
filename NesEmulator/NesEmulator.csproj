@@ -48,7 +48,6 @@
     <Compile Include="APU\TriangleChannel.cs" />
     <Compile Include="CPU\InstructionData.cs" />
     <Compile Include="CPU\InterruptWrapper.cs" />
-    <Compile Include="CPU\RegisterWrapper.cs" />
     <Compile Include="Input\Devices\Implementation\ButtonInputElement.cs" />
     <Compile Include="Input\Devices\Implementation\NesControlPad.cs" />
     <Compile Include="Input\Devices\INesInputDevice.cs" />

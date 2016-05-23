@@ -5,8 +5,10 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using EmulatorCore.Components.Core;
 using EmulatorCore.Components.CPU;
 using EmulatorCore.Components.Memory;
+using EmulatorCore.Core;
 using EmulatorCore.Extensions;
 using NesEmulator.APU;
 using NesEmulator.Input;
@@ -29,7 +31,7 @@ namespace NesEmulator.CPU
 
         private IMemoryBus cpuBus;
         private InstructionData[] instructions = new InstructionData[0x100];
-        private ReadOnlyCollection<IProcessorRegister> registers;
+        private ReadOnlyCollection<IRegister> registers;
         private ReadOnlyCollection<IProcessorInterrupt> interrupts;
 
         private bool resetAsserted = false;
@@ -107,8 +109,8 @@ namespace NesEmulator.CPU
             this.Y = 0;
             this.S = 0xFD;
 
-            this.registers = new ReadOnlyCollection<IProcessorRegister>(
-                new IProcessorRegister[] {
+            this.registers = new ReadOnlyCollection<IRegister>(
+                new IRegister[] {
                     new RegisterWrapper("PC", "Program Counter", 16, () => this.PC, (value) => this.PC = (UInt16)value),
                     new RegisterWrapper("A", "Accumulator", 8, () => this.A, (value) => this.A = (byte)value),
                     new RegisterWrapper("X", "X", 8, () => this.X, (value) => this.X = (byte)value),
@@ -144,7 +146,7 @@ namespace NesEmulator.CPU
             this.AddOpTableEntry("ADC", this.ADC, InstructionType.Read,
                 new InstructionVariant(0x69, AddressingMode.Immediate, 2),
                 new InstructionVariant(0x65, AddressingMode.ZeroPage, 3),
-                new InstructionVariant(0x75, AddressingMode.ZeroPageIndexedX, 3),
+                new InstructionVariant(0x75, AddressingMode.ZeroPageIndexedX, 4),
                 new InstructionVariant(0x6d, AddressingMode.Absolute, 4),
                 new InstructionVariant(0x7D, AddressingMode.AbsoluteIndexedX, 4),
                 new InstructionVariant(0x79, AddressingMode.AbsoluteIndexedY, 4),
@@ -192,11 +194,11 @@ namespace NesEmulator.CPU
                 new InstructionVariant(0xD1, AddressingMode.IndirectIndexed, 5));
             this.AddOpTableEntry("CPX", this.CPX, InstructionType.Read,
                 new InstructionVariant(0xE0, AddressingMode.Immediate, 2),
-                new InstructionVariant(0xE4, AddressingMode.ZeroPage, 2),
+                new InstructionVariant(0xE4, AddressingMode.ZeroPage, 3),
                 new InstructionVariant(0xEC, AddressingMode.Absolute, 4));
             this.AddOpTableEntry("CPY", this.CPY, InstructionType.Read,
                 new InstructionVariant(0xC0, AddressingMode.Immediate, 2),
-                new InstructionVariant(0xC4, AddressingMode.ZeroPage, 2),
+                new InstructionVariant(0xC4, AddressingMode.ZeroPage, 3),
                 new InstructionVariant(0xCC, AddressingMode.Absolute, 4));
             this.AddOpTableEntry("DEC", this.DEC, InstructionType.Read | InstructionType.Write,
                 new InstructionVariant(0xC6, AddressingMode.ZeroPage, 5),
@@ -555,7 +557,7 @@ namespace NesEmulator.CPU
             {
                 UInt16 newPC = (UInt16)(this.PC + (sbyte)arg);
                 // 1 extra cycle if branch is taken, 2 extra cycles if the branch is to another page
-                int cycles = ((newPC & 0x100) == (this.PC & 0100)) ? 1 : 2;
+                int cycles = ((newPC & 0x100) == (this.PC & 0x100)) ? 1 : 2;
                 this.PC = (UInt16)newPC;
                 return cycles;
             }
@@ -1581,7 +1583,11 @@ namespace NesEmulator.CPU
             get { return this.interrupts; }
         }
 
-        IEnumerable<IProcessorRegister> IProcessorCore.Registers
+        #endregion
+
+        #region IComponentWithRegisters Implementation
+
+        IEnumerable<IRegister> IComponentWithRegisters.Registers
         {
             get { return this.registers; }
         }

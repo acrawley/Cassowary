@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Diagnostics;
 using EmulatorCore.Components;
@@ -6,11 +8,12 @@ using EmulatorCore.Components.Core;
 using EmulatorCore.Components.CPU;
 using EmulatorCore.Components.Graphics;
 using EmulatorCore.Components.Memory;
+using EmulatorCore.Core;
 using EmulatorCore.Extensions;
 
 namespace NesEmulator.PPU
 {
-    internal class Ricoh2C02 : IEmulatorComponent, IMemoryMappedDevice, IPartImportsSatisfiedNotification
+    internal class Ricoh2C02 : IComponentWithRegisters, IComponentWithClock, IMemoryMappedDevice, IPartImportsSatisfiedNotification
     {
         #region Constants
 
@@ -57,6 +60,8 @@ namespace NesEmulator.PPU
         private byte[] primaryOam;
         private byte[] secondaryOam;
 
+        private ReadOnlyCollection<IRegister> registers;
+
         #endregion
 
         #region Constructor
@@ -89,6 +94,12 @@ namespace NesEmulator.PPU
             this.oddFrame = false;
             this.scanline = -1;
             this.cycle = 0;
+
+            this.registers = new ReadOnlyCollection<IRegister>(
+                new IRegister[] {
+                    new RegisterWrapper("scanline", "PPU Scanline", 16, () => this.scanline, s => this.scanline = s),
+                    new RegisterWrapper("cycle", "PPU Cycle", 16, () => this.cycle, c => this.cycle = c)
+                });
 
             //this.vbiTimer.Start();
         }
@@ -280,27 +291,8 @@ namespace NesEmulator.PPU
 
         #endregion
 
-        public void Step()
+        public void Tick()
         {
-            // PPU ticks 3 times during each CPU cycle
-            Tick();
-            Tick();
-            Tick();
-        }
-
-        private void Tick()
-        {
-            if (this.cycle > 340)
-            {
-                this.cycle = 0;
-                this.scanline++;
-            }
-
-            if (this.scanline > 260)
-            {
-                this.scanline = -1;
-            }
-
             if (this.scanline == -1)
             {
                 // Pre-render scanline
@@ -322,6 +314,17 @@ namespace NesEmulator.PPU
             }
 
             this.cycle++;
+
+            if (this.cycle > 340)
+            {
+                this.cycle = 0;
+                this.scanline++;
+            }
+
+            if (this.scanline > 260)
+            {
+                this.scanline = -1;
+            }
         }
 
         private void TickPreRenderScanline()
@@ -883,6 +886,15 @@ namespace NesEmulator.PPU
                     }
                     break;
             }
+        }
+
+        #endregion
+
+        #region IComponentWithRegisters Implementation
+
+        IEnumerable<IRegister> IComponentWithRegisters.Registers
+        {
+            get { return this.registers; }
         }
 
         #endregion

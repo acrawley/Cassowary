@@ -100,7 +100,10 @@ namespace NesEmulator
 
                 for (int i = 0; i < cycles; i++)
                 {
-                    this.ppu.Step();
+                    // PPU ticks 3 times during each CPU cycle
+                    this.ppu.Tick();
+                    this.ppu.Tick();
+                    this.ppu.Tick();
                 }
 
                 for (int i = 0; i < cycles; i++)

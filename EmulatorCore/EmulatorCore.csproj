@@ -45,6 +45,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Components\Audio\IAudioRenderer.cs" />
+    <Compile Include="Components\Core\IComponentWithClock.cs" />
+    <Compile Include="Components\Core\IComponentWithRegisters.cs" />
     <Compile Include="Components\CPU\IInstruction.cs" />
     <Compile Include="Components\Graphics\IPalette.cs" />
     <Compile Include="Components\Graphics\IPaletteEntry.cs" />
@@ -61,8 +63,9 @@
     <Compile Include="Components\Memory\IMemoryMapping.cs" />
     <Compile Include="Components\CPU\IProcessorCore.cs" />
     <Compile Include="Components\CPU\IProcessorInterrupt.cs" />
-    <Compile Include="Components\CPU\IProcessorRegister.cs" />
+    <Compile Include="Components\Core\IRegister.cs" />
     <Compile Include="Components\Memory\IMemoryMirroring.cs" />
+    <Compile Include="Core\RegisterWrapper.cs" />
     <Compile Include="Extensions\ProcessorExtensions.cs" />
     <Compile Include="Memory\MemoryMapping.cs" />
     <Compile Include="EmulatorBase.cs" />

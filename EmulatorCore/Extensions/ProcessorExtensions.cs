@@ -1,17 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using EmulatorCore.Components.Core;
 using EmulatorCore.Components.CPU;
 
 namespace EmulatorCore.Extensions
 {
     public static class ProcessorExtensions
     {
-        public static IProcessorRegister GetRegisterByName(this IProcessorCore cpu, string registerName)
+        public static IRegister GetRegisterByName(this IComponentWithRegisters component, string registerName)
         {
-            return cpu.Registers.FirstOrDefault(r => String.Equals(r.Name, registerName, StringComparison.Ordinal));
+            return component.Registers.FirstOrDefault(r => String.Equals(r.Name, registerName, StringComparison.Ordinal));
         }
 
         public static IProcessorInterrupt GetInterruptByName(this IProcessorCore cpu, string interruptName)

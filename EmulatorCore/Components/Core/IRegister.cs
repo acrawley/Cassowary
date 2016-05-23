@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EmulatorCore.Components.CPU
+namespace EmulatorCore.Components.Core
 {
-    public interface IProcessorRegister
+    public interface IRegister
     {
         string Name { get; }
         string Description { get; }

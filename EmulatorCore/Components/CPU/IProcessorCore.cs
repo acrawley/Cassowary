@@ -3,7 +3,7 @@ using EmulatorCore.Components.Core;
 
 namespace EmulatorCore.Components.CPU
 {
-    public interface IProcessorCore : IEmulatorComponent
+    public interface IProcessorCore : IComponentWithRegisters
     {
         /// <summary>
         /// Executes the next instruction
@@ -18,7 +18,5 @@ namespace EmulatorCore.Components.CPU
         IInstruction DecodeInstruction(IEnumerable<byte> instructionBytes);
 
         IEnumerable<IProcessorInterrupt> Interrupts { get; }
-
-        IEnumerable<IProcessorRegister> Registers { get; }
     }
 }

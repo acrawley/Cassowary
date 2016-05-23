@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Globalization;
-using EmulatorCore.Components.CPU;
+using EmulatorCore.Components.Core;
 
-namespace NesEmulator.CPU
+namespace EmulatorCore.Core
 {
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
-    internal class RegisterWrapper : IProcessorRegister
+    public class RegisterWrapper : IRegister
     {
         #region Private Fields
 
@@ -18,12 +18,12 @@ namespace NesEmulator.CPU
 
         #region Constructor
 
-        internal RegisterWrapper(string name, string description, int width, Func<int> getValue, Action<int> setValue)
+        public RegisterWrapper(string name, string description, int width, Func<int> getValue, Action<int> setValue)
             :this(name, description, width, getValue, setValue, null)
         {
         }
 
-        internal RegisterWrapper(string name, string description, int width, Func<int> getValue, Action<int> setValue, Func<string> getFormattedValueFunc)
+        public RegisterWrapper(string name, string description, int width, Func<int> getValue, Action<int> setValue, Func<string> getFormattedValueFunc)
         {
             this.Name = name;
             this.Description = description;
@@ -49,7 +49,7 @@ namespace NesEmulator.CPU
 
         #endregion
 
-        #region IProcessorRegister Implementation
+        #region IrRegister Implementation
 
         public string Description { get; private set; }
 
