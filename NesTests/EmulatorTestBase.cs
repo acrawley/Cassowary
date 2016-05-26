@@ -5,6 +5,8 @@ using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Linq;
 using EmulatorCore.Components;
+using EmulatorCore.Components.Core;
+using EmulatorCore.Components.CPU;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace NesTests
@@ -61,6 +63,41 @@ namespace NesTests
         {
             IEmulatorFactory factory = this.EmulatorFactories.SingleOrDefault(e => e.Metadata.EmulatorName == "NES").Value;
             return factory.CreateInstance();
+        }
+
+        protected void RunEmulator(IEmulator emulator, Func<bool> tickFunc)
+        {
+            IProcessorCore cpu = (IProcessorCore)emulator.Components.First(c => c.Name == "Ricoh 2A03 CPU");
+            IComponentWithClock ppu = (IComponentWithClock)emulator.Components.First(c => c.Name == "Ricoh 2C02 PPU");
+            IComponentWithClock apu = (IComponentWithClock)emulator.Components.First(c => c.Name == "NES APU");
+
+            while (true)
+            {
+                if (tickFunc != null && !tickFunc())
+                {
+                    break;
+                }
+
+                int cycles = cpu.Step();
+                if (cycles < 0)
+                {
+                    Assert.Fail("CPU step failed!");
+                    break;
+                }
+
+                for (int i = 0; i < cycles; i++)
+                {
+                    // PPU ticks 3 times during each CPU cycle
+                    ppu.Tick();
+                    ppu.Tick();
+                    ppu.Tick();
+                }
+
+                for (int i = 0; i < cycles; i++)
+                {
+                    apu.Tick();
+                }
+            }
         }
     }
 }

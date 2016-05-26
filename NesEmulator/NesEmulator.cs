@@ -89,6 +89,8 @@ namespace NesEmulator
             this.run = true;
 
             IProcessorCore core = (IProcessorCore)this.cpu;
+            IComponentWithClock ppuClock = (IComponentWithClock)this.ppu;
+            IComponentWithClock apuClock = (IComponentWithClock)this.cpu.APU;
 
             while (this.run)
             {
@@ -101,14 +103,14 @@ namespace NesEmulator
                 for (int i = 0; i < cycles; i++)
                 {
                     // PPU ticks 3 times during each CPU cycle
-                    this.ppu.Tick();
-                    this.ppu.Tick();
-                    this.ppu.Tick();
+                    ppuClock.Tick();
+                    ppuClock.Tick();
+                    ppuClock.Tick();
                 }
 
                 for (int i = 0; i < cycles; i++)
                 {
-                    this.cpu.APU.Tick();
+                    apuClock.Tick();
                 }
 
                 cycleCount += cycles;

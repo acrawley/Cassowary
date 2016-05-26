@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Diagnostics;
-using EmulatorCore.Components;
 using EmulatorCore.Components.Core;
 using EmulatorCore.Components.CPU;
+using EmulatorCore.Components.Debugging;
 using EmulatorCore.Components.Graphics;
 using EmulatorCore.Components.Memory;
-using EmulatorCore.Core;
+using EmulatorCore.Debugging;
 using EmulatorCore.Extensions;
 
 namespace NesEmulator.PPU
@@ -140,8 +140,8 @@ namespace NesEmulator.PPU
         }
 
         private bool greyscale;
-        private bool showLeftBackground;
-        private bool showLeftSprites;
+        private bool clipLeftBackground;
+        private bool clipLeftSprites;
         private bool showBackground;
         private bool showSprites;
         private bool redEmphasis;
@@ -151,8 +151,8 @@ namespace NesEmulator.PPU
         private void SetPpuMask(byte value)
         {
             this.greyscale = ((value & 0x01) == 0x01);
-            this.showLeftBackground = ((value & 0x02) == 0x02);
-            this.showLeftSprites = ((value & 0x04) == 0x04);
+            this.clipLeftBackground = ((value & 0x02) != 0x02);
+            this.clipLeftSprites = ((value & 0x04) != 0x04);
             this.showBackground = ((value & 0x08) == 0x08);
             this.showSprites = ((value & 0x10) == 0x10);
             this.redEmphasis = ((value & 0x20) == 0x20);
@@ -350,6 +350,9 @@ namespace NesEmulator.PPU
                     this.spriteZeroHit = false;
                     this.spriteOverflow = false;
 
+                    this.spriteZeroOnCurrentScanline = false;
+                    this.spriteZeroOnNextScanline = false;
+
                     this.oddFrame = !this.oddFrame;
 
                     if (this.vbiAssertion != null)
@@ -393,28 +396,33 @@ namespace NesEmulator.PPU
             if (cycle == 0)
             {
                 // Idle
+                this.spriteZeroOnCurrentScanline = this.spriteZeroOnNextScanline;
             }
             else if (cycle <= 256)
             {
-                int pixelColor = 0;
+                int pixelColor = this.paletteMemory[0];
                 int bgPalette = 0;
 
                 if (this.showBackground)
                 {
-                    // Use data from shift registers to calculate pixel color
-                    bgPalette = (((this.tileBitmapLoShiftRegister & (0x8000 >> this.fineXScroll)) != 0) ? 0x01 : 0x00) +
-                                (((this.tileBitmapHiShiftRegister & (0x8000 >> this.fineXScroll)) != 0) ? 0x02 : 0x00);
-
-                    int paletteIndex = 0;
-                    if (bgPalette != 0)
+                    // Clip the first 8 pixels if requested
+                    if (!this.clipLeftBackground || this.cycle > 8)
                     {
-                        // Palette entry 0 always comes from the first palette, so only calculate the target palette
-                        //  for non-zero pixels.
-                        paletteIndex = (((this.attributeLoShiftRegister & (0x80 >> this.fineXScroll)) != 0) ? 0x01 : 0x00) +
-                                       (((this.attributeHiShiftRegister & (0x80 >> this.fineXScroll)) != 0) ? 0x02 : 0x00);
-                    }
+                        // Use data from shift registers to calculate pixel color
+                        bgPalette = (((this.tileBitmapLoShiftRegister & (0x8000 >> this.fineXScroll)) != 0) ? 0x01 : 0x00) +
+                                    (((this.tileBitmapHiShiftRegister & (0x8000 >> this.fineXScroll)) != 0) ? 0x02 : 0x00);
 
-                    pixelColor = this.paletteMemory[(paletteIndex * 4) + bgPalette];
+                        int paletteIndex = 0;
+                        if (bgPalette != 0)
+                        {
+                            // Palette entry 0 always comes from the first palette, so only calculate the target palette
+                            //  for non-zero pixels.
+                            paletteIndex = (((this.attributeLoShiftRegister & (0x80 >> this.fineXScroll)) != 0) ? 0x01 : 0x00) +
+                                           (((this.attributeHiShiftRegister & (0x80 >> this.fineXScroll)) != 0) ? 0x02 : 0x00);
+                        }
+
+                        pixelColor = this.paletteMemory[(paletteIndex * 4) + bgPalette];
+                    }
 
                     this.FetchTileData();
                 }
@@ -427,24 +435,30 @@ namespace NesEmulator.PPU
                     {
                         if (this.spriteXPositionCounter[i] == 0)
                         {
-                            if (!foundSprite)
+                            if (!this.clipLeftSprites || this.cycle > 8)
                             {
-                                int spritePalette = (((this.spriteBitmapLoShiftRegister[i] & 0x80) == 0x80) ? 0x01 : 0x00) +
-                                                    (((this.spriteBitmapHiShiftRegister[i] & 0x80) == 0x80) ? 0x02 : 0x00);
-
-                                if (spritePalette != 0)
+                                if (!foundSprite)
                                 {
-                                    // Found a sprite with a non-transparent pixel at this location
-                                    foundSprite = true;
+                                    int spritePalette = (((this.spriteBitmapLoShiftRegister[i] & 0x80) == 0x80) ? 0x01 : 0x00) +
+                                                        (((this.spriteBitmapHiShiftRegister[i] & 0x80) == 0x80) ? 0x02 : 0x00);
 
-                                    // Use the sprite's color if the background is transparent or the sprite has foreground priority
-                                    if (bgPalette == 0 || ((this.spriteAttributeLatch[i] & 0x20) == 0x00))
+                                    if (spritePalette != 0)
                                     {
-                                        pixelColor = this.paletteMemory[((this.spriteAttributeLatch[i] & 0x03) * 4) + 16 + spritePalette];
+                                        // Found a sprite with a non-transparent pixel at this location
+                                        foundSprite = true;
 
-                                        if (i == 0 && this.spriteZeroOnCurrentScanline)
+                                        // Sprite 0 Hit occurs when a non-transparent pixel of the first sprite overlaps a non-transparent
+                                        //  background pixel, even if the sprite is "behind" the background, unless it's the last pixel on
+                                        //  the scanline (due to weird PPU hardware implementation details)
+                                        if (i == 0 && this.spriteZeroOnCurrentScanline && bgPalette != 0 && cycle != 256)
                                         {
                                             this.spriteZeroHit = true;
+                                        }
+
+                                        // Use the sprite's color if the background is transparent or the sprite has foreground priority
+                                        if (bgPalette == 0 || ((this.spriteAttributeLatch[i] & 0x20) == 0x00))
+                                        {
+                                            pixelColor = this.paletteMemory[((this.spriteAttributeLatch[i] & 0x03) * 4) + 16 + spritePalette];
                                         }
                                     }
                                 }
@@ -544,7 +558,6 @@ namespace NesEmulator.PPU
             {
                 this.currentState = SpriteEvaluationState.EvaluateYCoord;
                 this.spritesFound = 0;
-                this.spriteZeroOnCurrentScanline = this.spriteZeroOnNextScanline;
                 this.spriteZeroOnNextScanline = false;
             }
             else if (this.cycle <= 64)
@@ -577,8 +590,8 @@ namespace NesEmulator.PPU
                             this.secondaryOam[this.spritesFound * 4] = spriteEvalTemp;
 
                             // If the Y coordinate of the sprite is in range, we need to copy the rest of its data
-                            //  from primary OAM
-                            if (this.scanline >= this.spriteEvalTemp && this.scanline < (this.spriteEvalTemp + (this.tallSprites ? 16 : 8)))
+                            //  from primary OAM.  Ignore results on line 239, as no sprites are shown on line 0.
+                            if (this.scanline >= this.spriteEvalTemp && this.scanline < (this.spriteEvalTemp + (this.tallSprites ? 16 : 8)) && this.scanline != 239)
                             {
                                 if (!this.spriteZeroOnNextScanline)
                                 {

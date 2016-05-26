@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Globalization;
-using EmulatorCore.Components.Core;
+using EmulatorCore.Components.Debugging;
 
-namespace EmulatorCore.Core
+namespace EmulatorCore.Debugging
 {
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public class RegisterWrapper : IRegister

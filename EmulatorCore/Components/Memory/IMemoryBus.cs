@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
 using EmulatorCore.Components.Core;
+using EmulatorCore.Components.Debugging;
 
 namespace EmulatorCore.Components.Memory
 {
-    public interface IMemoryBus : IEmulatorComponent
+    public interface IMemoryBus : IComponentWithBreakpoints
     {
         byte Read(int address);
         void Write(int address, byte value);

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
-using EmulatorCore.Components.Core;
 using EmulatorCore.Components.CPU;
+using EmulatorCore.Components.Debugging;
 
 namespace EmulatorCore.Extensions
 {

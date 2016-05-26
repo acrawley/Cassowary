@@ -56,6 +56,7 @@
     <Compile Include="Fakes\FakeAudioRenderer.cs" />
     <Compile Include="Fakes\FakeInputReader.cs" />
     <Compile Include="Fakes\FakePaletteFramebuffer.cs" />
+    <Compile Include="SpriteHitTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -73,6 +74,39 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="TestResources\CpuTests\nestest.nes">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="TestRoms\sprite_hit_tests_2005.10.05\01.basics.nes">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="TestRoms\sprite_hit_tests_2005.10.05\02.alignment.nes">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="TestRoms\sprite_hit_tests_2005.10.05\03.corners.nes">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="TestRoms\sprite_hit_tests_2005.10.05\04.flip.nes">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="TestRoms\sprite_hit_tests_2005.10.05\05.left_clip.nes">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="TestRoms\sprite_hit_tests_2005.10.05\06.right_edge.nes">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="TestRoms\sprite_hit_tests_2005.10.05\07.screen_bottom.nes">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="TestRoms\sprite_hit_tests_2005.10.05\08.double_height.nes">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="TestRoms\sprite_hit_tests_2005.10.05\09.timing_basics.nes">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="TestRoms\sprite_hit_tests_2005.10.05\10.timing_order.nes">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="TestRoms\sprite_hit_tests_2005.10.05\11.edge_timing.nes">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

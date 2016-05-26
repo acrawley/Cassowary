@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using EmulatorCore.Components.Core;
+using EmulatorCore.Components.Debugging;
 
 namespace EmulatorCore.Components.CPU
 {

@@ -46,8 +46,11 @@
   <ItemGroup>
     <Compile Include="Components\Audio\IAudioRenderer.cs" />
     <Compile Include="Components\Core\IComponentWithClock.cs" />
-    <Compile Include="Components\Core\IComponentWithRegisters.cs" />
+    <Compile Include="Components\Debugging\IBreakpoint.cs" />
+    <Compile Include="Components\Debugging\IComponentWithBreakpoints.cs" />
+    <Compile Include="Components\Debugging\IComponentWithRegisters.cs" />
     <Compile Include="Components\CPU\IInstruction.cs" />
+    <Compile Include="Components\Debugging\IMemoryBreakpoint.cs" />
     <Compile Include="Components\Graphics\IPalette.cs" />
     <Compile Include="Components\Graphics\IPaletteEntry.cs" />
     <Compile Include="Components\Graphics\IPaletteFramebuffer.cs" />
@@ -63,10 +66,13 @@
     <Compile Include="Components\Memory\IMemoryMapping.cs" />
     <Compile Include="Components\CPU\IProcessorCore.cs" />
     <Compile Include="Components\CPU\IProcessorInterrupt.cs" />
-    <Compile Include="Components\Core\IRegister.cs" />
+    <Compile Include="Components\Debugging\IRegister.cs" />
     <Compile Include="Components\Memory\IMemoryMirroring.cs" />
-    <Compile Include="Core\RegisterWrapper.cs" />
+    <Compile Include="Debugging\BreakpointBase.cs" />
+    <Compile Include="Debugging\RegisterWrapper.cs" />
     <Compile Include="Extensions\ProcessorExtensions.cs" />
+    <Compile Include="Extensions\StringExtensions.cs" />
+    <Compile Include="Memory\MemoryBreakpoint.cs" />
     <Compile Include="Memory\MemoryMapping.cs" />
     <Compile Include="EmulatorBase.cs" />
     <Compile Include="Extensions\MemoryBusExtensions.cs" />

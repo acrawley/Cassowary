@@ -7,6 +7,7 @@ using System.Text;
 using EmulatorCore.Components;
 using EmulatorCore.Components.Core;
 using EmulatorCore.Components.CPU;
+using EmulatorCore.Components.Debugging;
 using EmulatorCore.Components.Memory;
 using EmulatorCore.Extensions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -19,16 +20,15 @@ namespace NesTests
         [TestMethod]
         public void RunCpuTest()
         {
-            IEmulator nesEmulator = this.GetInstance();
-            nesEmulator.LoadFile(@"TestResources\CpuTests\nestest.nes");
+            IEmulator emulator = this.GetInstance();
+            emulator.LoadFile(@"TestResources\CpuTests\nestest.nes");
 
             List<string> expectedOutput = new List<string>(File.ReadAllLines(@"TestResources\CpuTests\nestest.expected"));
 
-            IProcessorCore cpu = (IProcessorCore)nesEmulator.Components.First(c => c.Name == "Ricoh 2A03 CPU");
-            IComponentWithRegisters ppu = (IComponentWithRegisters)nesEmulator.Components.First(c => c.Name == "Ricoh 2C02 PPU");
-            IComponentWithClock ppuTick = (IComponentWithClock)ppu;
+            IProcessorCore cpu = (IProcessorCore)emulator.Components.First(c => c.Name == "Ricoh 2A03 CPU");
+            IComponentWithRegisters ppu = (IComponentWithRegisters)emulator.Components.First(c => c.Name == "Ricoh 2C02 PPU");
 
-            IMemoryBus cpuBus = (IMemoryBus)nesEmulator.Components.First(c => c.Name == "CPU Bus");
+            IMemoryBus cpuBus = (IMemoryBus)emulator.Components.First(c => c.Name == "CPU Bus");
 
             // Jump to automated test entry point
             cpu.GetRegisterByName("PC").Value = 0xC000;
@@ -38,34 +38,27 @@ namespace NesTests
             ppu.GetRegisterByName("cycle").Value = 0;
             ppu.GetRegisterByName("scanline").Value = 241;
 
-            foreach (string outputLine in expectedOutput)
+            IEnumerator<string> outputLineEnumerator = expectedOutput.GetEnumerator();
+            outputLineEnumerator.MoveNext();
+
+            base.RunEmulator(emulator, () =>
             {
                 string state = this.DumpEmulatorState(cpu, ppu, cpuBus);
+                string expectedOutputLine = outputLineEnumerator.Current;
 
-                if (!outputLine.StartsWith("#") && 
-                    !String.Equals(state, outputLine, StringComparison.Ordinal))
+                if (!expectedOutputLine.StartsWith("#") &&
+                    !String.Equals(state, expectedOutputLine, StringComparison.Ordinal))
                 {
                     Debug.WriteLine("**** {0}", (object)state);
-                    Debug.WriteLine("Exp: {0}", (object)outputLine);
+                    Debug.WriteLine("Exp: {0}", (object)expectedOutputLine);
                     Assert.Fail("Output mismatch!");
+                    return false;
                 }
 
-                Debug.WriteLine("     {0}", (object)state);
-
-                int cycles = cpu.Step();
-                if (cycles < 0)
-                {
-                    Assert.Fail("CPU step failed!");
-                }
-
-                for (int i = 0; i < cycles; i++)
-                {
-                    // PPU ticks 3 times during each CPU cycle
-                    ppuTick.Tick();
-                    ppuTick.Tick();
-                    ppuTick.Tick();
-                }
-            }
+                Debug.WriteLine(state);
+                
+                return outputLineEnumerator.MoveNext();
+            });
         }
 
         // Dump current CPU/PPU state in Nintendulator-ish format

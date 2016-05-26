@@ -1,20 +1,36 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using EmulatorCore.Components;
 using EmulatorCore.Components.Core;
+using EmulatorCore.Components.Debugging;
 using EmulatorCore.Components.Memory;
+using EmulatorCore.Extensions;
 
 namespace EmulatorCore.Memory
 {
-    public class MemoryBus : IEmulatorComponent, IMemoryBus
+    public class MemoryBus : IMemoryBus
     {
         #region Private Fields
 
-        private MemoryMapping[] mappings;
-        private MemoryMirroring[] mirrorings;
+        private List<MemoryMapping> mappings;
+        private MemoryMapping[] mappingsArray;
+
+        private List<MemoryMirroring> mirrorings;
+        private MemoryMirroring[] mirroringsArray;
+
+        private List<MemoryBreakpoint> disabledBreakpoints;
+
+        private List<MemoryBreakpoint> readBreakpoints;
+        private MemoryBreakpoint[] readBreakpointsArray;
+
+        private List<MemoryBreakpoint> writeBreakpoints;
+        private MemoryBreakpoint[] writeBreakpointsArray;
+
         private int width;
         private int size;
 
@@ -28,8 +44,19 @@ namespace EmulatorCore.Memory
             this.Name = name;
             this.size = (int)Math.Pow(2, width);
 
-            this.mappings = new MemoryMapping[0];
-            this.mirrorings = new MemoryMirroring[0];
+            this.mappingsArray = new MemoryMapping[0];
+            this.mappings = new List<MemoryMapping>();
+
+            this.mirroringsArray = new MemoryMirroring[0];
+            this.mirrorings = new List<MemoryMirroring>();
+
+            this.disabledBreakpoints = new List<MemoryBreakpoint>();
+
+            this.readBreakpoints = new List<MemoryBreakpoint>();
+            this.readBreakpointsArray = new MemoryBreakpoint[0];
+
+            this.writeBreakpoints = new List<MemoryBreakpoint>();
+            this.writeBreakpointsArray = new MemoryBreakpoint[0];
         }
 
         #endregion
@@ -47,9 +74,9 @@ namespace EmulatorCore.Memory
             // This method is on a very hot path - use arrays instead of List<T>, indexed loops instead
             //  of foreach or LINQ, and inline as much as possible.  Improves perf by ~40%.
             MemoryMapping activeMapping = null;
-            for (int i = 0; i < this.mappings.Length; i++)
+            for (int i = 0; i < this.mappingsArray.Length; i++)
             {
-                MemoryMapping mapping = this.mappings[i];
+                MemoryMapping mapping = this.mappingsArray[i];
                 if (mapping.StartAddress <= address && mapping.EndAddress >= address)
                 {
                     activeMapping = mapping;
@@ -61,9 +88,9 @@ namespace EmulatorCore.Memory
             {
                 // If we weren't able to find a mapping for the address, check to see if the address is in a mirrored range
                 MemoryMirroring activeMirroring = null;
-                for (int i = 0; i < this.mirrorings.Length; i++)
+                for (int i = 0; i < this.mirroringsArray.Length; i++)
                 {
-                    MemoryMirroring mirroring = this.mirrorings[i];
+                    MemoryMirroring mirroring = this.mirroringsArray[i];
                     if (mirroring.MirrorStartAddress <= address && mirroring.MirrorEndAddress >= address)
                     {
                         activeMirroring = mirroring;
@@ -76,9 +103,9 @@ namespace EmulatorCore.Memory
                     // Calculate the base address and try to find a mapping again
                     address = activeMirroring.SourceStartAddress + ((address - activeMirroring.MirrorStartAddress) % activeMirroring.SourceSize);
 
-                    for (int i = 0; i < this.mappings.Length; i++)
+                    for (int i = 0; i < this.mappingsArray.Length; i++)
                     {
-                        MemoryMapping mapping = this.mappings[i];
+                        MemoryMapping mapping = this.mappingsArray[i];
                         if (mapping.StartAddress <= address && mapping.EndAddress >= address)
                         {
                             activeMapping = mapping;
@@ -93,10 +120,101 @@ namespace EmulatorCore.Memory
 
         #endregion
 
+        #region IComponentWithBreakpoints Implementation
+
+        IEnumerable<string> IComponentWithBreakpoints.SupportedBreakpointTypes
+        {
+            get
+            {
+                return new string[] { MemoryBreakpoint.BreakpointType };
+            }
+        }
+
+        IBreakpoint IComponentWithBreakpoints.CreateBreakpoint(string breakpointType)
+        {
+            if (String.Equals(breakpointType, MemoryBreakpoint.BreakpointType, StringComparison.Ordinal))
+            {
+                MemoryBreakpoint bp = new MemoryBreakpoint(this);
+                bp.PropertyChanged += this.OnBreakpointPropertyChanged;
+                this.disabledBreakpoints.Add(bp);
+
+                return bp;
+            }
+
+            throw new NotSupportedException("'{0}' is not a supported breakpoint type!".FormatCurrentCulture(breakpointType));
+        }
+
+        private void OnBreakpointPropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            MemoryBreakpoint bp = sender as MemoryBreakpoint;
+            if (bp != null)
+            {
+                switch (e.PropertyName)
+                {
+                    case nameof(IMemoryBreakpoint.AccessType):
+                    case nameof(IMemoryBreakpoint.Enabled):
+                        this.disabledBreakpoints.Remove(bp);
+                        this.readBreakpoints.Remove(bp);
+                        this.writeBreakpoints.Remove(bp);
+
+                        if (bp.Enabled)
+                        {
+                            if ((bp.AccessType & AccessType.Read) == AccessType.Read)
+                            {
+                                this.readBreakpoints.Add(bp);
+                            }
+
+                            if ((bp.AccessType & AccessType.Write) == AccessType.Write)
+                            {
+                                this.writeBreakpoints.Add(bp);
+                            }
+                        }
+                        else
+                        {
+                            this.disabledBreakpoints.Add(bp);
+                        }
+
+                        this.readBreakpointsArray = this.readBreakpoints.ToArray();
+                        this.writeBreakpointsArray = this.writeBreakpoints.ToArray();
+
+                        break;
+                }
+            }
+        }
+
+        void IComponentWithBreakpoints.DeleteBreakpoint(IBreakpoint breakpoint)
+        {
+            MemoryBreakpoint bp = breakpoint as MemoryBreakpoint;
+            if (bp != null)
+            {
+                bp.PropertyChanged -= this.OnBreakpointPropertyChanged;
+
+                this.disabledBreakpoints.Remove(bp);
+                this.readBreakpoints.Remove(bp);
+                this.writeBreakpoints.Remove(bp);
+
+                this.readBreakpointsArray = this.readBreakpoints.ToArray();
+                this.writeBreakpointsArray = this.writeBreakpoints.ToArray();
+            }
+        }
+
+        #endregion
+
         #region IMemoryBus Implementation
 
         byte IMemoryBus.Read(int address)
         {
+            if (this.readBreakpointsArray.Length != 0)
+            {
+                for (int i = 0; i < this.readBreakpointsArray.Length; i++)
+                {
+                    if (this.readBreakpointsArray[i].TargetAddress == address)
+                    {
+                        this.readBreakpointsArray[i].OnBreakpointHit();
+                    }
+                }
+            }
+
             IMemoryMappedDevice device = this.GetDeviceAtAddress(ref address);
             if (device == null)
             {
@@ -109,6 +227,17 @@ namespace EmulatorCore.Memory
 
         void IMemoryBus.Write(int address, byte value)
         {
+            if (this.writeBreakpointsArray.Length != 0)
+            {
+                for (int i = 0; i < this.writeBreakpointsArray.Length; i++)
+                {
+                    if (this.writeBreakpointsArray[i].TargetAddress == address)
+                    {
+                        this.writeBreakpointsArray[i].OnBreakpointHit();
+                    }
+                }
+            }
+
             IMemoryMappedDevice device = this.GetDeviceAtAddress(ref address);
             if (device == null)
             {
@@ -130,22 +259,24 @@ namespace EmulatorCore.Memory
         IMemoryMapping IMemoryBus.RegisterMappedDevice(IMemoryMappedDevice device, int startAddress, int endAddress)
         {
             MemoryMapping mapping = new MemoryMapping(device, startAddress, endAddress);
-
-            MemoryMapping[] newArray = new MemoryMapping[this.mappings.Length + 1];
-            Array.Copy(this.mappings, newArray, this.mappings.Length);
-            newArray[this.mappings.Length] = mapping;
-
-            this.mappings = newArray;
+            this.mappings.Add(mapping);
+            this.mappingsArray = this.mappings.ToArray();
 
             return mapping;
         }
 
         void IMemoryBus.RemoveMapping(IMemoryMapping mapping)
         {
-            this.mappings = this.mappings.Where(m =>
-                m.Device != mapping.Device ||
-                m.StartAddress != mapping.StartAddress ||
-                m.EndAddress != mapping.EndAddress).ToArray();
+            MemoryMapping mappingToRemove = this.mappings.FirstOrDefault(m =>
+                m.Device == mapping.Device &&
+                m.StartAddress == mapping.StartAddress &&
+                m.EndAddress == mapping.EndAddress);
+
+            if (mappingToRemove != null)
+            {
+                this.mappings.Remove(mappingToRemove);
+                this.mappingsArray = this.mappings.ToArray();
+            }
         }
 
         IEnumerable<IMemoryMirroring> IMemoryBus.Mirrorings
@@ -166,23 +297,25 @@ namespace EmulatorCore.Memory
             }
 
             MemoryMirroring mirroring = new MemoryMirroring(sourceStartAddress, sourceSize, mirrorStartAddress, mirrorEndAddress);
-
-            MemoryMirroring[] newArray = new MemoryMirroring[this.mirrorings.Length + 1];
-            Array.Copy(this.mirrorings, newArray, this.mirrorings.Length);
-            newArray[this.mirrorings.Length] = mirroring;
-
-            this.mirrorings = newArray;
+            this.mirrorings.Add(mirroring);
+            this.mirroringsArray = this.mirrorings.ToArray();
 
             return mirroring;
         }
 
         void IMemoryBus.RemoveMirroring(IMemoryMirroring mirroring)
         {
-            this.mirrorings = this.mirrorings.Where(m =>
-                m.SourceStartAddress != mirroring.SourceStartAddress ||
-                m.SourceSize != mirroring.SourceSize ||
-                m.MirrorStartAddress != mirroring.MirrorStartAddress ||
-                m.MirrorEndAddress != mirroring.MirrorEndAddress).ToArray();
+            MemoryMirroring mirroringToRemove = this.mirroringsArray.FirstOrDefault(m =>
+                m.SourceStartAddress == mirroring.SourceStartAddress &&
+                m.SourceSize == mirroring.SourceSize &&
+                m.MirrorStartAddress == mirroring.MirrorStartAddress &&
+                m.MirrorEndAddress == mirroring.MirrorEndAddress);
+
+            if (mirroringToRemove != null)
+            {
+                this.mirrorings.Remove(mirroringToRemove);
+                this.mirroringsArray = this.mirrorings.ToArray();
+            }
         }
 
         #endregion

@@ -13,7 +13,7 @@ using EmulatorCore.Extensions;
 
 namespace NesEmulator.APU
 {
-    internal class NesApu : IEmulatorComponent, IMemoryMappedDevice, IPartImportsSatisfiedNotification
+    internal class NesApu : IComponentWithClock, IMemoryMappedDevice, IPartImportsSatisfiedNotification
     {
         #region Constants
 
@@ -159,7 +159,9 @@ namespace NesEmulator.APU
 
         #endregion
 
-        internal void Tick()
+        #region IComponentWithClock Implementation
+
+        void IComponentWithClock.Tick()
         {
             if (this.isApuCycle)
             {
@@ -179,6 +181,8 @@ namespace NesEmulator.APU
 
             this.isApuCycle = !this.isApuCycle;
         }
+
+        #endregion
 
         #region Frame Counter
 

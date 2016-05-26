@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EmulatorCore.Components.Core
+namespace EmulatorCore.Components.Debugging
 {
     public interface IRegister
     {
