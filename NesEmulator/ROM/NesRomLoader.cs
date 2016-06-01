@@ -9,6 +9,7 @@ using EmulatorCore.Components.Memory;
 using NesEmulator.ROM.Mappers;
 using NesEmulator.ROM.Readers;
 using System.Globalization;
+using EmulatorCore.Components.CPU;
 
 namespace NesEmulator.ROM
 {
@@ -28,6 +29,8 @@ namespace NesEmulator.ROM
 
         private IMemoryBus cpuBus;
         private IMemoryBus ppuBus;
+        private IProcessorInterrupt irq;
+
         private IMapper currentMapper;
 
         private Stream imageStream;
@@ -37,10 +40,11 @@ namespace NesEmulator.ROM
 
         #region Constructor
 
-        internal NesRomLoader(IMemoryBus cpuBus, IMemoryBus ppuBus)
+        internal NesRomLoader(IMemoryBus cpuBus, IMemoryBus ppuBus, IProcessorInterrupt irq)
         {
             this.cpuBus = cpuBus;
             this.ppuBus = ppuBus;
+            this.irq = irq;
         }
 
         #endregion
@@ -76,7 +80,7 @@ namespace NesEmulator.ROM
                 this.currentMapper = null;
             }
 
-            this.currentMapper = mapperFactory.CreateInstance(this.reader, this.cpuBus, this.ppuBus);
+            this.currentMapper = mapperFactory.CreateInstance(this.reader, this.cpuBus, this.ppuBus, this.irq);
         }
 
         #endregion

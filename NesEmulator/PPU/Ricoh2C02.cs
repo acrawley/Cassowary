@@ -13,6 +13,7 @@ using EmulatorCore.Extensions;
 
 namespace NesEmulator.PPU
 {
+    [DebuggerDisplay("PPU: Scanline = {scanline}, Cycle = {cycle}")]
     internal class Ricoh2C02 : IComponentWithRegisters, IComponentWithClock, IMemoryMappedDevice, IPartImportsSatisfiedNotification
     {
         #region Constants
@@ -817,7 +818,7 @@ namespace NesEmulator.PPU
             {
                 case 1:
                     // Cycle 0 / 1: Read and discard nametable garbage
-                    this.ppuBus.Read(0x00);
+                    //this.ppuBus.Read(0x00);
                     break;
 
                 case 2:
@@ -827,7 +828,7 @@ namespace NesEmulator.PPU
 
                 case 3:
                     // Cycle 3: Read and discard nametable garbage, load X coordinate
-                    this.ppuBus.Read(0x00);
+                    //this.ppuBus.Read(0x00);
                     this.spriteXPositionCounter[sprite] = this.secondaryOam[(sprite * 4) + 3];
                     break;
 
@@ -838,8 +839,17 @@ namespace NesEmulator.PPU
                         // Cycle 6 / 7: Read high byte of sprite bitmap
                         int tileIndex = this.secondaryOam[(sprite * 4) + 1];
                         int patternTableAddr = this.spritePatternTableAddr;
-                        int tileRow = this.scanline - this.secondaryOam[sprite * 4];
+                        int spriteY = this.secondaryOam[sprite * 4];
                         bool vFlip = ((this.spriteAttributeLatch[sprite] & 0x80) == 0x80);
+
+                        int tileRow = this.scanline - spriteY;
+                        if (spriteY > this.scanline)
+                        {
+                            // If we've run out of sprites on this line, the secondary OAM dummy value for the Y-coordinate
+                            //  (sprite 63's Y-coordinate for the first empty sprite slot, 0xFF otherwise) could be larger
+                            //  than the current scanline.  In that case, just fetch tile row 0.
+                            tileRow = 0;
+                        }
 
                         if (this.tallSprites)
                         {

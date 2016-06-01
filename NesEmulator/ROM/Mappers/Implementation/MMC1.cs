@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel.Composition;
 using System.Diagnostics;
+using EmulatorCore.Components.CPU;
 using EmulatorCore.Components.Memory;
 using NesEmulator.ROM.Readers;
 
@@ -10,7 +11,7 @@ namespace NesEmulator.ROM.Mappers.Implementation
     [MapperId(1)]
     internal class MMC1MapperFactory : IMapperFactory
     {
-        IMapper IMapperFactory.CreateInstance(IImageReader reader, IMemoryBus cpuBus, IMemoryBus ppuBus)
+        IMapper IMapperFactory.CreateInstance(IImageReader reader, IMemoryBus cpuBus, IMemoryBus ppuBus, IProcessorInterrupt irq)
         {
             return new MMC1Mapper(reader, cpuBus, ppuBus);
         }

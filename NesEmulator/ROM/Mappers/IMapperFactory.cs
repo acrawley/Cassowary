@@ -4,6 +4,7 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using EmulatorCore.Components.CPU;
 using EmulatorCore.Components.Memory;
 using NesEmulator.ROM.Readers;
 
@@ -11,7 +12,7 @@ namespace NesEmulator.ROM.Mappers
 {
     internal interface IMapperFactory
     {
-        IMapper CreateInstance(IImageReader reader, IMemoryBus cpuBus, IMemoryBus ppuBus);
+        IMapper CreateInstance(IImageReader reader, IMemoryBus cpuBus, IMemoryBus ppuBus, IProcessorInterrupt irq);
     }
 
     public interface IMapperFactoryMetadata

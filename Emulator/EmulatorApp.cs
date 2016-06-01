@@ -84,8 +84,11 @@ namespace Emulator
             //emulator.LoadFile(@"Z:\public\ROMs\NES\USA\Balloon Fight (U) [!].nes");
 
             //emulator.LoadFile(@"Z:\public\ROMs\NES\USA\Legend of Zelda, The (U) (PRG1) [!].nes");
-            emulator.LoadFile(@"Z:\public\ROMs\NES\Tests\sprite_hit_tests_2005.10.05\01.basics.nes");
-            //emulator.LoadFile(@"Z:\public\ROMs\NES\USA\Megaman II (U) [!].nes");
+            //emulator.LoadFile(@"Z:\public\ROMs\NES\Tests\holy_diver\testroms\M4_P256K_C256K.nes");
+            //emulator.LoadFile(@"Z:\public\ROMs\NES\USA\Super Mario Bros. 2 (U) (PRG1) [!].nes");
+            emulator.LoadFile(@"Z:\public\ROMs\NES\USA\Super Mario Bros. 3 (U) (PRG1) [!].nes");
+            //emulator.LoadFile(@"Z:\public\ROMs\NES\Tests\mmc3_test\1-clocking.nes");
+            //emulator.LoadFile(@"Z:\public\ROMs\NES\USA\Kirby's Adventure (U) (PRG1) [!].nes");
 
             //emulator.LoadFile(@"z:\public\ROMs\NES\tests\nestest.nes");
             emulator.Run();

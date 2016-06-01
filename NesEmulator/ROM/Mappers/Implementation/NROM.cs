@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.Composition;
+using EmulatorCore.Components.CPU;
 using EmulatorCore.Components.Memory;
 using NesEmulator.ROM.Readers;
 
@@ -9,7 +10,7 @@ namespace NesEmulator.ROM.Mappers.Implementation
     [MapperId(0)]
     internal class NROMFactory : IMapperFactory
     {
-        IMapper IMapperFactory.CreateInstance(IImageReader reader, IMemoryBus cpuBus, IMemoryBus ppuBus)
+        IMapper IMapperFactory.CreateInstance(IImageReader reader, IMemoryBus cpuBus, IMemoryBus ppuBus, IProcessorInterrupt irq)
         {
             return new NROMMapper(reader, cpuBus, ppuBus);
         }

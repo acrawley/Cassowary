@@ -16,6 +16,7 @@ using System.ComponentModel.Composition.Hosting;
 using System.Threading;
 using EmulatorCore.Components.Core;
 using NesEmulator.APU;
+using EmulatorCore.Extensions;
 
 namespace NesEmulator
 {
@@ -49,9 +50,11 @@ namespace NesEmulator
             // Create and connect parts
             this.cpuBus = new MemoryBus(16, "CPU Bus");
             this.ppuBus = new MemoryBus(16, "PPU Bus");
-            this.loader = new NesRomLoader(this.cpuBus, this.ppuBus);
+
             this.cpuRam = new Memory("CPU RAM", this.cpuBus, 0x0000, 0x800);
             this.cpu = new Ricoh2A03(this.cpuBus);
+
+            this.loader = new NesRomLoader(this.cpuBus, this.ppuBus, this.cpu.GetInterruptByName("IRQ"));
 
             this.ppu = new Ricoh2C02(this.cpu, this.cpuBus, this.ppuBus);
 
@@ -116,7 +119,7 @@ namespace NesEmulator
                 cycleCount += cycles;
                 if (sw.ElapsedMilliseconds >= 1000)
                 {
-                    Trace.WriteLine(String.Format("Emulated clock speed: {0} MHz", cycleCount / (1000000f)));
+                    //Trace.WriteLine(String.Format("Emulated clock speed: {0} MHz", cycleCount / (1000000f)));
                     cycleCount = 0;
                     sw.Restart();
                 }
