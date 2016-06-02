@@ -266,7 +266,7 @@ namespace NesEmulator.ROM.Mappers.Implementation
             int chrRomSize = (this.Reader.ChrRomSize != 0) ? this.Reader.ChrRomSize : 0x2000;
 
             this.prgRomBanks = this.Reader.PrgRomSize / MMC3Mapper.PrgRomBankSize;
-            this.chrRomBanks = this.Reader.ChrRomSize / MMC3Mapper.ChrRomBankSize;
+            this.chrRomBanks = (this.Reader.ChrRomSize != 0) ? (this.Reader.ChrRomSize / MMC3Mapper.ChrRomBankSize) : 8;
 
             this.prgRam = new byte[prgRamSize];
             this.prgRom = new byte[prgRomSize];
