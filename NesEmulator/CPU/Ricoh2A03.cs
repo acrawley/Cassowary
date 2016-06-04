@@ -1376,7 +1376,7 @@ namespace NesEmulator.CPU
                 this.PC,
                 op.Opcode,
                 (op.Size > 1) ? String.Format(CultureInfo.InvariantCulture, "{0:X2}", arg1) : "  ",
-                (op.Size > 2) ? String.Format(CultureInfo.InvariantCulture, "{0:X2}", arg1) : "  ",
+                (op.Size > 2) ? String.Format(CultureInfo.InvariantCulture, "{0:X2}", arg2) : "  ",
                 instruction.Mnemonic,
                 instruction.Operands,
                 instruction.OperandsDetail);
