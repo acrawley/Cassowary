@@ -16,6 +16,23 @@ namespace NesEmulator.ROM.Mappers.Implementation
         }
     }
 
+    [Export(typeof(IMapperFactory))]
+    [MapperId(71)]
+    internal class Camerica71MapperFactory : IMapperFactory
+    {
+        IMapper IMapperFactory.CreateInstance(IImageReader reader, IMemoryBus cpuBus, IMemoryBus ppuBus, IProcessorInterrupt irq)
+        {
+            return new UxROMMapper(reader, cpuBus, ppuBus, UxRomVariant.Camerica71);
+        }
+    }
+
+    internal enum UxRomVariant
+    {
+        UxROM,
+        Camerica71
+    }
+
+
     internal class UxROMMapper : MapperBase, IMemoryMappedDevice
     {
         #region Constants
@@ -35,6 +52,9 @@ namespace NesEmulator.ROM.Mappers.Implementation
 
         private int prgRomBanks;
 
+        private UInt16 bankSwitchRegisterAddrRangeEnd;
+        private UInt16 bankSwitchRegisterAddrRangeStart;
+
         #endregion
 
         #region Registers
@@ -48,7 +68,7 @@ namespace NesEmulator.ROM.Mappers.Implementation
 
         #region Constructor
 
-        internal UxROMMapper(IImageReader reader, IMemoryBus cpuBus, IMemoryBus ppuBus) 
+        internal UxROMMapper(IImageReader reader, IMemoryBus cpuBus, IMemoryBus ppuBus, UxRomVariant variant = UxRomVariant.UxROM) 
             : base(reader, cpuBus, ppuBus)
         {
             if (this.Reader.ChrRomSize != 0 && this.Reader.ChrRomSize != 8 * 1024)
@@ -82,6 +102,19 @@ namespace NesEmulator.ROM.Mappers.Implementation
 
             // High bank of PRG ROM is always mapped at 0xC000
             this.prgRomHiBankMask = (UInt32)(this.prgRomBanks - 1) << 14;
+
+            switch (variant)
+            {
+                case UxRomVariant.UxROM:
+                    this.bankSwitchRegisterAddrRangeStart = 0x8000;
+                    this.bankSwitchRegisterAddrRangeEnd = 0xFFFF;
+                    break;
+
+                case UxRomVariant.Camerica71:
+                    this.bankSwitchRegisterAddrRangeStart = 0xC000;
+                    this.bankSwitchRegisterAddrRangeEnd = 0xFFFF;
+                    break;
+            }
         }
 
         #endregion
@@ -128,7 +161,7 @@ namespace NesEmulator.ROM.Mappers.Implementation
                 // Write to CHR RAM
                 this.chrRom[address] = value;
             }
-            else if (address >= 0x8000 && address <= 0xFFFF)
+            else if (address >= this.bankSwitchRegisterAddrRangeStart && address <= this.bankSwitchRegisterAddrRangeEnd)
             {
                 this.SetPrgBankRegister(value);
             }
