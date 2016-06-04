@@ -30,7 +30,8 @@ namespace NesEmulator.ROM.Readers.Implementation
         private const int ChrRomBankSize = 1024 * 8;
 
         private Stream imageStream;
-        byte[] header;
+        private byte[] header;
+        private bool hasBrokenHeader;
 
         internal iNesReader(Stream imageStream)
         {
@@ -39,6 +40,13 @@ namespace NesEmulator.ROM.Readers.Implementation
 
             imageStream.Read(this.header, 0, 16);
             imageStream.Seek(-16, SeekOrigin.Current);
+
+            // Early iNES dumps often contained garbage starting at header byte 7.  If reserved bytes
+            //  12-15 are not all 0's, assume nothing in the header past byte 6 is valid.
+            this.hasBrokenHeader = !(this.header[12] == 0 &&
+                                     this.header[13] == 0 &&
+                                     this.header[14] == 0 &&
+                                     this.header[15] == 0);
         }
 
         private void EnsureValidImage()
@@ -139,7 +147,14 @@ namespace NesEmulator.ROM.Readers.Implementation
 
                 if (this._prgRamSize == -1)
                 {
-                    this._prgRamSize = PrgRamBankSize * this.header[8];
+                    if (this.hasBrokenHeader)
+                    {
+                        this._prgRamSize = 0;
+                    }
+                    else
+                    {
+                        this._prgRamSize = PrgRamBankSize * this.header[8];
+                    }
                 }
 
                 return this._prgRamSize;
@@ -220,12 +235,9 @@ namespace NesEmulator.ROM.Readers.Implementation
                 {
                     this._mapper = (this.header[6] & 0xF0) >> 4;
 
-                    // Early iNES dumps often had garbage in the header reserved bits - if they're not 0,
+                    // Early iNES dumps often had garbage in the header reserved bits - if so,
                     //  assume only the low nibble of the mapper number is valid.
-                    if (this.header[12] == 0 &&
-                        this.header[13] == 0 &&
-                        this.header[14] == 0 &&
-                        this.header[15] == 0)
+                    if (!this.hasBrokenHeader)
                     {
                         this._mapper = this._mapper + (this.header[7] & 0xF0);
                     }
@@ -246,6 +258,11 @@ namespace NesEmulator.ROM.Readers.Implementation
             {
                 this.EnsureValidImage();
 
+                if (this.hasBrokenHeader)
+                {
+                    return false;
+                }
+
                 return (this.header[7] & 0x01) == 0x01;
             }
         }
@@ -255,6 +272,11 @@ namespace NesEmulator.ROM.Readers.Implementation
             get
             {
                 this.EnsureValidImage();
+
+                if (this.hasBrokenHeader)
+                {
+                    return false;
+                }
 
                 return (this.header[7] & 0x02) == 0x02;
             }

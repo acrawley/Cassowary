@@ -316,7 +316,7 @@ namespace NesEmulator.ROM.Mappers.Implementation
 
                     if (registerFull)
                     {
-                        Debug.WriteLine("MMC1: Register full: Address = 0x{0:X4}, Value = 0x{1:X2}", address, this.shiftRegister);
+                        //Debug.WriteLine("MMC1: Register full: Address = 0x{0:X4}, Value = 0x{1:X2}", address, this.shiftRegister);
 
                         // Copy shift register value to selected internal register and reset
                         if (address >= 0x8000 && address <= 0x9FFF)
