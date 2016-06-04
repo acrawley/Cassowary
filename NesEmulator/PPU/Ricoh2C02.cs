@@ -148,6 +148,7 @@ namespace NesEmulator.PPU
         private bool redEmphasis;
         private bool greenEmphasis;
         private bool blueEmphasis;
+        private bool renderingEnabled;
 
         private void SetPpuMask(byte value)
         {
@@ -159,6 +160,8 @@ namespace NesEmulator.PPU
             this.redEmphasis = ((value & 0x20) == 0x20);
             this.greenEmphasis = ((value & 0x40) == 0x40);
             this.blueEmphasis = ((value & 0x80) == 0x80);
+
+            this.renderingEnabled = this.showSprites || this.showBackground;
         }
 
         private bool spriteOverflow;
@@ -207,7 +210,7 @@ namespace NesEmulator.PPU
             }
             set
             {
-                if (this.scanline <= 239 && (this.showSprites || this.showBackground))
+                if (this.scanline <= 239 && this.renderingEnabled)
                 {
                     // When rendering visible scanlines, writes to OAMDATA don't actually update OAM,
                     //  but they do increment the top 6 bits of OAMADDR
@@ -363,29 +366,29 @@ namespace NesEmulator.PPU
                     }
                 }
 
-                if (this.showBackground)
+                if (this.renderingEnabled)
                 {
                     this.FetchTileData();
                 }
             }
-            else if (cycle == 257 && this.showBackground)
+            else if (cycle == 257 && this.renderingEnabled)
             {
                 // Copy horizontal scroll data from temp register to VRAM addr
                 // v: ... .F ..... EDCBA = t: ... .F ..... EDCBA
                 this.vramAddr = (UInt16)((this.vramAddrTemp & HORIZONTAL_MASK) | (this.vramAddr & VERTICAL_MASK));
             }
-            else if (this.cycle >= 280 && this.cycle <= 304 && this.showBackground)
+            else if (this.cycle >= 280 && this.cycle <= 304 && this.renderingEnabled)
             {
                 // Copy vertical scroll data from temp register to VRAM addr
                 // v: IHG F. EDCBA ..... = t: IHG F. EDCBA .....
                 this.vramAddr = (UInt16)((this.vramAddrTemp & VERTICAL_MASK) | (this.vramAddr & HORIZONTAL_MASK));
 
             }
-            else if (this.cycle >= 321 && this.cycle <= 336 && this.showBackground)
+            else if (this.cycle >= 321 && this.cycle <= 336 && this.renderingEnabled)
             {
                 this.FetchTileData();
             }
-            else if (this.cycle == 339 && this.oddFrame && (this.showBackground || this.showSprites))
+            else if (this.cycle == 339 && this.oddFrame && this.renderingEnabled)
             {
                 // Pre-render scanline is one cycle shorter on odd frames if rendering is enabled
                 this.cycle++;
@@ -424,8 +427,6 @@ namespace NesEmulator.PPU
 
                         pixelColor = this.paletteMemory[(paletteIndex * 4) + bgPalette];
                     }
-
-                    this.FetchTileData();
                 }
 
                 if (this.showSprites)
@@ -475,24 +476,29 @@ namespace NesEmulator.PPU
                     }
                 }
 
+                if (this.renderingEnabled)
+                {
+                    this.FetchTileData();
+                }
+
                 this.Framebuffer.SetPixel(this.cycle - 1, this.scanline, pixelColor);
             }
             else if (cycle <= 320)
             {
-                if (cycle == 257 && this.showBackground)
+                if (cycle == 257 && this.renderingEnabled)
                 {
                     // Copy horizontal scroll data from temp register to VRAM addr
                     // v: ... .F ..... EDCBA = t: ... .F ..... EDCBA
                     this.vramAddr = (UInt16)((this.vramAddrTemp & HORIZONTAL_MASK) | (this.vramAddr & VERTICAL_MASK));
                 }
 
-                if (this.showSprites)
+                if (this.renderingEnabled)
                 {
                     // Pre-fetch sprite tiles for next scanline
                     this.FetchSpriteData();
                 }
             }
-            else if (cycle <= 336 && this.showBackground)
+            else if (cycle <= 336 && this.renderingEnabled)
             {
                 // Pre-fetch first two background tiles for next scanline
                 this.FetchTileData();
