@@ -41,5 +41,10 @@ namespace Emulator
             // Make sure we can receive input
             this.framebuffer.Focus();
         }
+
+        private void OnFramebufferMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            this.framebuffer.Focus();
+        }
     }
 }

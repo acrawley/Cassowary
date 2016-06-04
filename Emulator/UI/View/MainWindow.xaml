@@ -14,6 +14,7 @@
            FocusManager.IsFocusScope="True"
            helpers:KeyEventBinding.KeyDownCommand="{Binding KeyDownCommand}"
            helpers:KeyEventBinding.KeyUpCommand="{Binding KeyUpCommand}"
+           MouseDown="OnFramebufferMouseDown"
            RenderOptions.BitmapScalingMode="NearestNeighbor"
            Stretch="Uniform"     
            HorizontalAlignment="Stretch"
