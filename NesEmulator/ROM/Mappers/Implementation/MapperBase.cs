@@ -81,6 +81,23 @@ namespace NesEmulator.ROM.Mappers.Implementation
 
                     break;
 
+                case MirroringMode.SingleScreenA:
+                    // One screen, mapped to lower nametable: A A
+                    //                                        A A
+                    this.MapNametableA(0x2000);
+                    this.MapNametableB(-1);
+                    this.MirrorPpuRange(0x2000, 0x23FF, 0x2400, 0x2FFF);
+                    break;
+
+                case MirroringMode.SingleScreenB:
+                    // One screen, mapped to upper nametable: B B
+                    //                                        B B
+                    this.MapNametableA(-1);
+                    this.MapNametableB(0x2400);
+                    this.MirrorPpuRange(0x2400, 0x27FF, 0x2000, 0x23FF);
+                    this.MirrorPpuRange(0x2400, 0x27FF, 0x2800, 0x2FFF);
+                    break;
+
                 default:
                     throw new NotImplementedException(String.Format(CultureInfo.CurrentCulture, "Nametable mirroring mode '{0}' is not implemented!", mode));
             }

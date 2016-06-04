@@ -67,18 +67,13 @@ namespace NesEmulator.ROM.Mappers.Implementation
                 case 0x00:
                     // One screen, mapped to lower nametable: A A
                     //                                        A A
-                    base.MapNametableA(0x2000);
-                    base.MapNametableB(-1);
-                    this.MirrorPpuRange(0x2000, 0x23FF, 0x2400, 0x2FFF);
+                    base.SetNametableMirroring(MirroringMode.SingleScreenA);
                     break;
 
                 case 0x01:
                     // One screen, mapped to upper nametable: B B
                     //                                        B B
-                    base.MapNametableA(-1);
-                    base.MapNametableB(0x2400);
-                    this.MirrorPpuRange(0x2400, 0x27FF, 0x2000, 0x23FF);
-                    this.MirrorPpuRange(0x2400, 0x27FF, 0x2800, 0x2FFF);
+                    base.SetNametableMirroring(MirroringMode.SingleScreenB);
                     break;
 
                 case 0x02:

@@ -11,6 +11,8 @@ namespace NesEmulator.ROM.Readers
         Unknown,
         Horizontal,
         Vertical,
+        SingleScreenA,
+        SingleScreenB,
         FourScreen
     }
 
