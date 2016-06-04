@@ -218,7 +218,7 @@ namespace NesEmulator.ROM.Readers.Implementation
 
                 if (this._mapper == -1)
                 {
-                    int mapperLowBits = (this.header[6] & 0xF0) >> 4;
+                    this._mapper = (this.header[6] & 0xF0) >> 4;
 
                     // Early iNES dumps often had garbage in the header reserved bits - if they're not 0,
                     //  assume only the low nibble of the mapper number is valid.
@@ -227,10 +227,8 @@ namespace NesEmulator.ROM.Readers.Implementation
                         this.header[14] == 0 &&
                         this.header[15] == 0)
                     {
-                        this._mapper = mapperLowBits + (this.header[7] & 0xF0);
+                        this._mapper = this._mapper + (this.header[7] & 0xF0);
                     }
-
-                    this._mapper = mapperLowBits;
                 }
 
                 return this._mapper;
