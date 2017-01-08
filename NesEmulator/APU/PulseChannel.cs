@@ -62,7 +62,7 @@ namespace NesEmulator.APU
 
         internal void SetRegister3(byte value)
         {
-            this.timer = (UInt16)((this.timer & 0x300) | value);
+            this.timer = (UInt16)((this.timer & 0x700) | value);
         }
 
         internal void SetRegister4(byte value)
@@ -191,9 +191,9 @@ namespace NesEmulator.APU
         {
             int timerDelta = this.timer >> this.sweepShiftCount;
 
-            // Channel one negates the delta normally, channel 2 uses the one's complement for some reason
+            // Channel one's sweep unit negates the one's complement of the delta, channel 2 negates normally
             timerDelta = this.sweepNegative ?
-                            (this.isChannelOne ? (-timerDelta) : (~timerDelta)) :
+                            (this.isChannelOne ? (~timerDelta) : (-timerDelta)) :
                             timerDelta;
 
             int targetPeriod = this.timer + timerDelta;
