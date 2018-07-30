@@ -21,7 +21,7 @@ namespace Cassowary.Tests.Nes
         public void RunCpuTest()
         {
             IEmulator emulator = this.GetInstance();
-            emulator.LoadFile(@"TestResources\CpuTests\nestest.nes");
+            emulator.LoadFile(@"TestRoms\nestest\nestest.nes");
 
             List<string> expectedOutput = new List<string>(File.ReadAllLines(@"TestResources\CpuTests\nestest.expected"));
 
