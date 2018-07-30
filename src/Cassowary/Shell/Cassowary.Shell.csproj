@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\..\build\targets\Cassowary.CSharp.Settings.targets" />
+  <PropertyGroup>
+    <ProjectGuid>{26EF645C-3C20-4458-93B1-65759FCA0DAA}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Cassowary</RootNamespace>
+    <AssemblyName>Cassowary</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="EmulatorApp.cs" />
+    <Compile Include="Services\Audio\IAudioService.cs" />
+    <Compile Include="Services\Audio\Implementation\AudioService.cs" />
+    <Compile Include="Services\Audio\Implementation\Interop\Interop.cs" />
+    <Compile Include="Services\Audio\Implementation\Interop\IAudioClient.cs" />
+    <Compile Include="Services\Audio\Implementation\Interop\IAudioRenderClient.cs" />
+    <Compile Include="Services\Audio\Implementation\Interop\IMMDevice.cs" />
+    <Compile Include="Services\Audio\Implementation\Interop\IMMDeviceCollection.cs" />
+    <Compile Include="Services\Audio\Implementation\Interop\IMMDeviceEnumerator.cs" />
+    <Compile Include="Services\Audio\Implementation\Interop\IMMNotificationClient.cs" />
+    <Compile Include="Services\Audio\Implementation\Interop\IPropertyStore.cs" />
+    <Compile Include="Services\Audio\Implementation\Interop\MMDeviceEnumerator.cs" />
+    <Compile Include="Services\Audio\Implementation\Interop\PROPVARIANT.cs" />
+    <Compile Include="Services\Audio\Implementation\BufferQueue.cs" />
+    <Compile Include="Services\Configuration\ValidTypeAttribute.cs" />
+    <Compile Include="Services\Configuration\DefaultPropertyAttribute.cs" />
+    <Compile Include="Services\Configuration\IConfigurationSection.cs" />
+    <Compile Include="Services\Configuration\IConfigurationService.cs" />
+    <Compile Include="Services\Configuration\Implementation\ConfigurationRoot.cs" />
+    <Compile Include="Services\Configuration\Implementation\ConfigurationService.cs" />
+    <Compile Include="Services\Configuration\Implementation\Serialization\ConfigurationSerializer.cs" />
+    <Compile Include="Services\Configuration\SerializedNameAttribute.cs" />
+    <Compile Include="Services\Framebuffer\Implementation\FramebufferService.cs" />
+    <Compile Include="Services\Framebuffer\IFramebufferService.cs" />
+    <Compile Include="Services\Input\IKeyboardReader.cs" />
+    <Compile Include="Services\Input\Implementation\Configuration\Controller.cs" />
+    <Compile Include="Services\Input\Implementation\Configuration\ControllerElement.cs" />
+    <Compile Include="Services\Input\Implementation\Configuration\ElementMapping.cs" />
+    <Compile Include="Services\Input\Implementation\Configuration\InputConfiguration.cs" />
+    <Compile Include="Services\Input\Implementation\Configuration\KeyboardMapping.cs" />
+    <Compile Include="Services\Input\Implementation\Readers\KeyboardReader.cs" />
+    <Compile Include="Services\Input\Implementation\Configuration\XInputMapping.cs" />
+    <Compile Include="Services\Input\Implementation\InputService.cs" />
+    <Compile Include="Services\Input\Implementation\Readers\XInputReader.cs" />
+    <Compile Include="Services\Input\IXInputReader.cs" />
+    <Compile Include="UI\Helpers\KeyEventBinding.cs" />
+    <Compile Include="UI\Helpers\UICommand.cs" />
+    <Compile Include="UI\ViewModel\MainWindowViewModel.cs" />
+    <Compile Include="UI\View\MainWindow.xaml.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\Cassowary.Shared.csproj">
+      <Project>{de7a1297-4f35-4108-a3f0-121f60604cd3}</Project>
+      <Name>Cassowary.Shared</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="UI\View\MainWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Services\Configuration\Implementation\DefaultConfig.xml" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

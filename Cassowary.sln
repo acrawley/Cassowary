@@ -1,0 +1,85 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26730.8
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cassowary.Shell", "src\Cassowary\Shell\Cassowary.Shell.csproj", "{26EF645C-3C20-4458-93B1-65759FCA0DAA}"
+	ProjectSection(ProjectDependencies) = postProject
+		{161AD169-C28D-4380-8781-202C7CC7449A} = {161AD169-C28D-4380-8781-202C7CC7449A}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cassowary.Shared", "src\Cassowary\Shared\Cassowary.Shared.csproj", "{DE7A1297-4F35-4108-A3F0-121F60604CD3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cassowary.Core.Nes", "src\Cores\NES\Cassowary.Core.Nes.csproj", "{161AD169-C28D-4380-8781-202C7CC7449A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cassowary.Tests.Nes", "src\Tests\Nes\Cassowary.Tests.Nes.csproj", "{9624EB71-4CC3-4226-BF4C-68586BCA3DB6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Cassowary", "Cassowary", "{FCB80C80-FD03-44D2-B859-45034324857A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Cores", "Cores", "{1C1F5B98-5D7B-4ACB-843F-D15A94DFE165}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{1C4D2B41-1E62-49B8-9813-9E2B7ABCAF84}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{26EF645C-3C20-4458-93B1-65759FCA0DAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26EF645C-3C20-4458-93B1-65759FCA0DAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26EF645C-3C20-4458-93B1-65759FCA0DAA}.Debug|x86.ActiveCfg = Debug|x86
+		{26EF645C-3C20-4458-93B1-65759FCA0DAA}.Debug|x86.Build.0 = Debug|x86
+		{26EF645C-3C20-4458-93B1-65759FCA0DAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26EF645C-3C20-4458-93B1-65759FCA0DAA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26EF645C-3C20-4458-93B1-65759FCA0DAA}.Release|x86.ActiveCfg = Release|x86
+		{26EF645C-3C20-4458-93B1-65759FCA0DAA}.Release|x86.Build.0 = Release|x86
+		{DE7A1297-4F35-4108-A3F0-121F60604CD3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE7A1297-4F35-4108-A3F0-121F60604CD3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE7A1297-4F35-4108-A3F0-121F60604CD3}.Debug|x86.ActiveCfg = Debug|x86
+		{DE7A1297-4F35-4108-A3F0-121F60604CD3}.Debug|x86.Build.0 = Debug|x86
+		{DE7A1297-4F35-4108-A3F0-121F60604CD3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE7A1297-4F35-4108-A3F0-121F60604CD3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE7A1297-4F35-4108-A3F0-121F60604CD3}.Release|x86.ActiveCfg = Release|x86
+		{DE7A1297-4F35-4108-A3F0-121F60604CD3}.Release|x86.Build.0 = Release|x86
+		{161AD169-C28D-4380-8781-202C7CC7449A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{161AD169-C28D-4380-8781-202C7CC7449A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{161AD169-C28D-4380-8781-202C7CC7449A}.Debug|x86.ActiveCfg = Debug|x86
+		{161AD169-C28D-4380-8781-202C7CC7449A}.Debug|x86.Build.0 = Debug|x86
+		{161AD169-C28D-4380-8781-202C7CC7449A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{161AD169-C28D-4380-8781-202C7CC7449A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{161AD169-C28D-4380-8781-202C7CC7449A}.Release|x86.ActiveCfg = Release|x86
+		{161AD169-C28D-4380-8781-202C7CC7449A}.Release|x86.Build.0 = Release|x86
+		{9624EB71-4CC3-4226-BF4C-68586BCA3DB6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9624EB71-4CC3-4226-BF4C-68586BCA3DB6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9624EB71-4CC3-4226-BF4C-68586BCA3DB6}.Debug|x86.ActiveCfg = Debug|x86
+		{9624EB71-4CC3-4226-BF4C-68586BCA3DB6}.Debug|x86.Build.0 = Debug|x86
+		{9624EB71-4CC3-4226-BF4C-68586BCA3DB6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9624EB71-4CC3-4226-BF4C-68586BCA3DB6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9624EB71-4CC3-4226-BF4C-68586BCA3DB6}.Release|x86.ActiveCfg = Release|x86
+		{9624EB71-4CC3-4226-BF4C-68586BCA3DB6}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{26EF645C-3C20-4458-93B1-65759FCA0DAA} = {FCB80C80-FD03-44D2-B859-45034324857A}
+		{DE7A1297-4F35-4108-A3F0-121F60604CD3} = {FCB80C80-FD03-44D2-B859-45034324857A}
+		{161AD169-C28D-4380-8781-202C7CC7449A} = {1C1F5B98-5D7B-4ACB-843F-D15A94DFE165}
+		{9624EB71-4CC3-4226-BF4C-68586BCA3DB6} = {1C4D2B41-1E62-49B8-9813-9E2B7ABCAF84}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EF812CC6-B3C7-4331-82BE-0ED9025A375C}
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
+EndGlobal
